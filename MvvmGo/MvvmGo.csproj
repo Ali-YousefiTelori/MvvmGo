@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <!--<Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />-->
   <PropertyGroup>
     <TargetFrameworks>net45;net40;net35;netstandard1.6;portable45-net45+win8;portable-net45+win8+wpa81</TargetFrameworks>
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
@@ -55,6 +55,7 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+    <Folder Include="Validations\" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -124,15 +125,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
+    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
+    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'portable45-net45+win8'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
+    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
   </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'portable-net45+win8+wpa81'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.122203" />
+    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
   </ItemGroup>
 </Project>
