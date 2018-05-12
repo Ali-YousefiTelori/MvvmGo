@@ -20,6 +20,7 @@ namespace MvvmGo.ViewModels
         public Action<string> PropertyChangedAction { get; set; }
 
         volatile bool _IsBusy;
+        volatile string _BusyContent;
         volatile bool _HasError;
 
         public virtual bool IsBusy
@@ -32,6 +33,18 @@ namespace MvvmGo.ViewModels
             }
         }
 
+        public string BusyContent
+        {
+            get
+            {
+                return _BusyContent;
+            }
+            set
+            {
+                _BusyContent = value;
+                OnPropertyChanged(nameof(BusyContent));
+            }
+        }
 #if (!NET35)
         public ObservableCollection<ValidationMessageInfo> AllMessages { get; set; } = new ObservableCollection<ValidationMessageInfo>();
 #else
@@ -71,6 +84,7 @@ namespace MvvmGo.ViewModels
 
 #if (!NET35)
         public System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo>();
+
 #else
         public Dictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new Dictionary<string, ViewModelItemsInfo>();
 #endif
