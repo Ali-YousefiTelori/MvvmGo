@@ -21,6 +21,8 @@ namespace MvvmGo.Triggers
 
         public virtual bool Condition(object target)
         {
+            if (Conditions.Count == 0)
+                return false;
             bool result = true;
             foreach (var item in Conditions)
             {

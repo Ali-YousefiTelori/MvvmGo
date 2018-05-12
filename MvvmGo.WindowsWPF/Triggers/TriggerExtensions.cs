@@ -113,6 +113,8 @@ namespace MvvmGo.Triggers
                     var binding = (System.Windows.Data.Binding)dataCondition.Binding;
                     if (binding == null)
                         continue;
+                    if (triggerBaseInfo.Conditions.Count == 0)
+                        triggerBaseInfo.Conditions.Add(condition);
                     WhenPropertyChanged(binding, element, (propertyChanged, propertyName) =>
                     {
                         if (propertyChanged != null)
@@ -174,6 +176,8 @@ namespace MvvmGo.Triggers
                 }
                 else if (condition is ConditionInfo conditionInfo)
                 {
+                    if (triggerBaseInfo.Conditions.Count == 0)
+                        triggerBaseInfo.Conditions.Add(condition);
                     var target = element;
                     if (conditionInfo.ElementName != null)
                     {
@@ -323,7 +327,7 @@ namespace MvvmGo.Triggers
                                 {
                                     target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
                                 }
-                                var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target && x.SetterInfoBase == setter);
+                                var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target );//&& x.SetterInfoBase == setter
                                 if (find != null)
                                     find.HasChange = true;
                                 else
@@ -343,7 +347,7 @@ namespace MvvmGo.Triggers
                                 //    RemoveEvent(target, eventInfo, eventSetterInfo);
                                 //    SetEvent(target, eventInfo, eventSetterInfo);
                                 //}
-                                var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target && x.SetterInfoBase == setter);
+                                var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target );//&& x.SetterInfoBase == setter
                                 if (find != null)
                                     find.HasChange = true;
                                 else
