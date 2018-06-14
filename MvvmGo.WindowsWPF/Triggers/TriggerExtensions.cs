@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,17 +10,24 @@ using System.Windows.Input;
 
 namespace MvvmGo.Triggers
 {
+    internal class TreeNotifyPropertyChanged
+    {
+        public Dictionary<string, List<TriggerItemData>> Properties { get; set; } = new Dictionary<string, List<TriggerItemData>>();
+
+        public object Self { get; set; }
+        public List<TreeNotifyPropertyChanged> Children { get; set; } = new List<TreeNotifyPropertyChanged>();
+        public TreeNotifyPropertyChanged Parent { get; set; }
+        public Action<object, string> ChangedAction { get; set; }
+    }
+
     internal class TriggerItemData
     {
         public TriggerBaseInfo Trigger { get; set; }
         public System.Windows.FrameworkElement Element { get; set; }
-        public IEnumerable<ConditionInfoBase> ConditionInfoes { get; set; }
-        public SetterCollectionInfo Setters { get; set; }
     }
 
     public class TriggerExtensions
     {
-
         public static readonly System.Windows.DependencyProperty TriggersProperty = System.Windows.DependencyProperty.RegisterAttached(
            "Triggers",
            typeof(TriggerCollections),
@@ -59,8 +67,18 @@ namespace MvvmGo.Triggers
                     if (dataTrigger.Binding != null)
                         dataConditionInfoes.Add(new DataConditionInfo() { Binding = (System.Windows.Data.Binding)dataTrigger.Binding, IsInvert = dataTrigger.IsInvert, Value = dataTrigger.Value });
                     dataConditionInfoes.AddRange(dataTrigger.Conditions);
+
                     if (element.DataContext == null)
+                    {
+                        void DataContextChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
+                        {
+                            element.DataContextChanged -= DataContextChanged;
+                            GenerateConditions(dataConditionInfoes, element, item);
+                        }
+
+                        element.DataContextChanged += DataContextChanged;
                         continue;
+                    }
                     GenerateConditions(dataConditionInfoes, element, item);
                 }
                 else if (item is TriggerInfo triggerInfo)
@@ -98,7 +116,16 @@ namespace MvvmGo.Triggers
                     }
                     dataConditionInfoes.AddRange(triggerInfo.Conditions);
                     if (element.DataContext == null)
+                    {
+                        void DataContextChanged(object sender, System.Windows.DependencyPropertyChangedEventArgs e)
+                        {
+                            element.DataContextChanged -= DataContextChanged;
+                            GenerateConditions(dataConditionInfoes, element, item);
+                        }
+
+                        element.DataContextChanged += DataContextChanged;
                         continue;
+                    }
                     GenerateConditions(dataConditionInfoes, element, item);
                 }
             }
@@ -106,6 +133,7 @@ namespace MvvmGo.Triggers
 
         static void GenerateConditions(IEnumerable<ConditionInfoBase> conditionInfoes, System.Windows.FrameworkElement element, TriggerBaseInfo triggerBaseInfo)
         {
+            List<TriggerItemData> triggerItemDatas = new List<TriggerItemData>();
             foreach (var condition in conditionInfoes)
             {
                 if (condition is DataConditionInfo dataCondition)
@@ -115,64 +143,9 @@ namespace MvvmGo.Triggers
                         continue;
                     if (triggerBaseInfo.Conditions.Count == 0)
                         triggerBaseInfo.Conditions.Add(condition);
-                    WhenPropertyChanged(binding, element, (propertyChanged, propertyName) =>
-                    {
-                        if (propertyChanged != null)
-                        {
-                            foreach (var setter in triggerBaseInfo.Setters)
-                            {
-                                //get defualt values
-                                if (setter is SetterInfo setterInfo)
-                                {
-                                    var target = element;
-                                    if (setterInfo.ElementName != null)
-                                    {
-                                        target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
-                                    }
-                                    if (target == null)
-                                        throw new Exception($"target by name {setterInfo.ElementName} not found!");
-                                    var property = target.GetType().GetProperty(setterInfo.Property);
-                                    if (property != null)
-                                    {
-                                        if (setterInfo.DefaultValue == null)
-                                            setterInfo.DefaultValue = property.GetValue(target, null);
-                                    }
-                                }
-                                else if (setter is DataSetterInfo dataSetterInfo)
-                                {
-                                    //var target = element;
-                                    //if (setterInfo.ElementName != null)
-                                    //{
-                                    //    target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
-                                    //}
-                                    //if (target == null)
-                                    //    throw new Exception($"target by name {setterInfo.ElementName} not found!");
-                                    //var property = target.GetType().GetProperty(setterInfo.Property);
-                                    //if (property != null)
-                                    //{
-                                    //    if (setterInfo.DefaultValue == null)
-                                    //        setterInfo.DefaultValue = property.GetValue(target, null);
-                                    //}
-                                }
-                            }
-                            dataCondition.PropertyChanged = propertyChanged;
-                            if (!BindedProperties.ContainsKey(propertyName))
-                            {
-                                BindedProperties[propertyName] = new List<TriggerItemData>() { new TriggerItemData() { Element = element, Trigger = triggerBaseInfo, ConditionInfoes = conditionInfoes, Setters = triggerBaseInfo.Setters } };
-                            }
-                            else if (!BindedProperties[propertyName].Any(x => x.Element == element && x.Trigger == triggerBaseInfo))
-                            {
-                                BindedProperties[propertyName].Add(new TriggerItemData() { Element = element, Trigger = triggerBaseInfo, ConditionInfoes = conditionInfoes, Setters = triggerBaseInfo.Setters });
-                            }
-                            if (!PropertyChangeds.Contains(propertyChanged))
-                            {
-                                PropertyChangeds.Add(propertyChanged);
-                                propertyChanged.PropertyChanged += PropertyChanged_PropertyChanged;
-                            }
-                            if (!conditionInfoes.Where(x => x is DataConditionInfo).Select(x => (DataConditionInfo)x).Any(x => x.PropertyChanged == null))
-                                PropertyChanged_PropertyChanged(propertyChanged, new PropertyChangedEventArgs(propertyName));
-                        }
-                    });
+                    var item = new TriggerItemData() { Element = element, Trigger = triggerBaseInfo };
+                    triggerItemDatas.Add(item);
+                    GenerateTreeNotifyPropertyChanged(binding, element, item);
                 }
                 else if (condition is ConditionInfo conditionInfo)
                 {
@@ -210,6 +183,81 @@ namespace MvvmGo.Triggers
                     descriptor.AddValueChanged(target, action);
                 }
             }
+            DoPropertyChanged(triggerItemDatas, true, null);
+        }
+
+        static void FristTimeFillData(System.Windows.FrameworkElement element, TriggerBaseInfo triggerBaseInfo, INotifyPropertyChanged propertyChanged)
+        {
+            foreach (var setter in triggerBaseInfo.Setters)
+            {
+                //get defualt values
+                if (setter is SetterInfo setterInfo)
+                {
+                    var target = element;
+                    if (setterInfo.ElementName != null)
+                    {
+                        target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
+                    }
+                    if (target != null)
+                    {
+                        var property = target.GetType().GetProperty(setterInfo.Property);
+                        if (property != null)
+                        {
+                            if (setterInfo.DefaultValue == null)
+                                setterInfo.DefaultValue = property.GetValue(target, null);
+                        }
+                    }
+                }
+                else if (setter is DataSetterInfo dataSetterInfo)
+                {
+                    //var target = element;
+                    //if (setterInfo.ElementName != null)
+                    //{
+                    //    target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
+                    //}
+                    //if (target == null)
+                    //    throw new Exception($"target by name {setterInfo.ElementName} not found!");
+                    //var property = target.GetType().GetProperty(setterInfo.Property);
+                    //if (property != null)
+                    //{
+                    //    if (setterInfo.DefaultValue == null)
+                    //        setterInfo.DefaultValue = property.GetValue(target, null);
+                    //}
+                }
+            }
+
+            foreach (var condition in triggerBaseInfo.Conditions)
+            {
+                if (condition is DataConditionInfo dataCondition)
+                {
+                    dataCondition.PropertyChanged = FindBinding((System.Windows.Data.Binding)dataCondition.Binding, element, propertyChanged);
+                }
+            }
+        }
+
+        static INotifyPropertyChanged FindBinding(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element, INotifyPropertyChanged propertyChanged)
+        {
+            if (binding.Source != null)
+                return (INotifyPropertyChanged)binding.Source;
+            var firstPath = binding.Path.Path.Split('.').LastOrDefault();
+            if (propertyChanged != null && propertyChanged.GetType().GetProperty(firstPath) != null)
+                return propertyChanged;
+            else if (element.DataContext != null && element.DataContext.GetType().GetProperty(firstPath) != null)
+                return (INotifyPropertyChanged)element.DataContext;
+
+            INotifyPropertyChanged result = propertyChanged;
+            if (result == null)
+                result = (INotifyPropertyChanged)element.DataContext;
+            foreach (var property in binding.Path.Path.Split('.'))
+            {
+                if (result == null)
+                    break;
+                if (result.GetType().GetProperty(firstPath) != null)
+                    return result;
+                if (result.GetType().GetProperty(property) != null)
+                    result = (INotifyPropertyChanged)result.GetType().GetProperty(property).GetValue(result, null);
+            }
+            return null;
         }
 
         static object GetValueBinding(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element)
@@ -221,73 +269,196 @@ namespace MvvmGo.Triggers
             INotifyPropertyChanged propertyChanged = context as INotifyPropertyChanged;
 
             string propertyName = "";
-            int i = 1;
             foreach (var path in allPathes)
             {
                 propertyName = path;
-                if (i == allPathes.Length)
+                var result = context.GetType().GetProperty(path).GetValue(context, null);
+                if (result == null)
                 {
-                    propertyChanged = context as INotifyPropertyChanged;
+                    propertyChanged = null;
+                    break;
                 }
                 else
                 {
-                    var result = context.GetType().GetProperty(path).GetValue(context, null);
-                    if (result == null)
-                    {
-                        propertyChanged = null;
-                        break;
-                    }
-                    else
-                    {
-                        context = result;
-                    }
+                    context = result;
                 }
-                i++;
             }
             return context;
         }
 
-        static void WhenPropertyChanged(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element, Action<INotifyPropertyChanged, string> Changed)
+        static ConcurrentDictionary<object, TreeNotifyPropertyChanged> BindedTreeNotifyProperties = new ConcurrentDictionary<object, TreeNotifyPropertyChanged>();
+
+        static void AddNewChangedDataBinding(TreeNotifyPropertyChanged treeNotifyPropertyChanged)
+        {
+            if (treeNotifyPropertyChanged.Self == null)
+                return;
+            if (BindedTreeNotifyProperties.TryGetValue(treeNotifyPropertyChanged.Self, out TreeNotifyPropertyChanged findTreeNotifyPropertyChanged))
+            {
+                foreach (var item in treeNotifyPropertyChanged.Properties)
+                {
+                    if (findTreeNotifyPropertyChanged.Properties.TryGetValue(item.Key, out List<TriggerItemData> list))
+                    {
+                        list.AddRange(item.Value);
+                    }
+                    else
+                    {
+                        findTreeNotifyPropertyChanged.Properties.Add(item.Key, item.Value);
+                    }
+                }
+            }
+            else
+            {
+                BindedTreeNotifyProperties.TryAdd(treeNotifyPropertyChanged.Self, treeNotifyPropertyChanged);
+
+                INotifyPropertyChanged propertyChanged = treeNotifyPropertyChanged.Self as INotifyPropertyChanged;
+                if (propertyChanged != null)
+                    propertyChanged.PropertyChanged += Self_PropertyChanged;
+            }
+        }
+
+        static void RemoveChangedDataBinding(TreeNotifyPropertyChanged treeNotifyPropertyChanged)
+        {
+            if (treeNotifyPropertyChanged.Self == null)
+                return;
+            BindedTreeNotifyProperties.TryRemove(treeNotifyPropertyChanged.Self, out TreeNotifyPropertyChanged removed);
+            if (removed == null || removed.Self == null)
+                return;
+            INotifyPropertyChanged propertyChanged = removed.Self as INotifyPropertyChanged;
+            if (propertyChanged != null)
+                propertyChanged.PropertyChanged -= Self_PropertyChanged;
+        }
+
+        private static void Self_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "CurrentPerson")
+            {
+
+            }
+            if (BindedTreeNotifyProperties.TryGetValue(sender, out TreeNotifyPropertyChanged treeNotifyPropertyChanged) && treeNotifyPropertyChanged.Properties.ContainsKey(e.PropertyName))
+            {
+                foreach (var child in treeNotifyPropertyChanged.Children)
+                {
+                    bool isFirstTime = false;
+                    var result = sender.GetType().GetProperty(e.PropertyName).GetValue(sender, null);
+                    if (child.Self == null || (EqualTypes(result, child.Self) && result != child.Self))
+                    {
+                        RemoveChangedDataBinding(child);
+                        isFirstTime = true;
+                        child.Self = result;
+                        AddNewChangedDataBinding(child);
+                    }
+
+                    foreach (var property in child.Properties)
+                    {
+                        DoPropertyChanged(property.Value, isFirstTime, child.Self is INotifyPropertyChanged ? (INotifyPropertyChanged)child.Self : null);
+                    }
+                }
+                DoPropertyChanged(treeNotifyPropertyChanged.Properties[e.PropertyName], false, (INotifyPropertyChanged)sender);
+            }
+        }
+
+        static bool EqualTypes(object target, object source)
+        {
+            if (target == null || source == null)
+                return false;
+            return target.GetType() == source.GetType();
+        }
+
+        static void GenerateTreeNotifyPropertyChanged(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element, TriggerItemData triggerItemData)
         {
             var allPathes = binding.Path.Path.Split('.');
             var context = element.DataContext;
             if (binding.Source != null)
                 context = binding.Source as INotifyPropertyChanged;
             INotifyPropertyChanged propertyChanged = context as INotifyPropertyChanged;
-
-            string propertyName = "";
-            int i = 1;
-            foreach (var path in allPathes)
+            var firstPath = allPathes.First();
+            TreeNotifyPropertyChanged treeNotifyPropertyChanged = null;
+            if (!BindedTreeNotifyProperties.TryGetValue(propertyChanged, out TreeNotifyPropertyChanged findTreeNotifyPropertyChanged))
             {
-                propertyName = path;
-                if (i == allPathes.Length)
-                {
-                    propertyChanged = context as INotifyPropertyChanged;
-                }
+                treeNotifyPropertyChanged = new TreeNotifyPropertyChanged();
+                treeNotifyPropertyChanged.Self = propertyChanged;
+                treeNotifyPropertyChanged.Properties.Add(firstPath, new List<TriggerItemData>() { triggerItemData });
+                AddNewChangedDataBinding(treeNotifyPropertyChanged);
+                FristTimeFillData(element, triggerItemData.Trigger, propertyChanged);
+            }
+            else
+            {
+                treeNotifyPropertyChanged = findTreeNotifyPropertyChanged;
+                if (findTreeNotifyPropertyChanged.Properties.ContainsKey(firstPath))
+                    findTreeNotifyPropertyChanged.Properties[firstPath].Add(triggerItemData);
                 else
+                    findTreeNotifyPropertyChanged.Properties.Add(firstPath, new List<TriggerItemData>() { triggerItemData });
+            }
+            var childContext = context.GetType().GetProperty(firstPath).GetValue(context, null);
+            foreach (var path in allPathes.Skip(1))
+            {
+                if (childContext == null)
                 {
-                    var result = context.GetType().GetProperty(path).GetValue(context, null);
-                    if (result == null)
+                    if (BindedTreeNotifyProperties.TryGetValue(context, out treeNotifyPropertyChanged))
                     {
-                        var changed = context as INotifyPropertyChanged;
-                        changed.PropertyChanged += (s, e) =>
-                        {
-                            if (e.PropertyName == propertyName)
-                                WhenPropertyChanged(binding, element, Changed);
-                        };
-                        propertyChanged = null;
-                        break;
+                        TreeNotifyPropertyChanged parent = new TreeNotifyPropertyChanged();
+                        parent.Parent = treeNotifyPropertyChanged;
+                        treeNotifyPropertyChanged.Children.Add(parent);
+                        parent.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+
                     }
                     else
                     {
-                        context = result;
+                        var result = childContext.GetType().GetProperty(path).GetValue(childContext, null);
+                        if (result != null)
+                        {
+                            childContext = result;
+                            if (!BindedTreeNotifyProperties.TryGetValue(childContext, out findTreeNotifyPropertyChanged))
+                            {
+                                TreeNotifyPropertyChanged parent = new TreeNotifyPropertyChanged();
+                                parent.Self = result;
+                                parent.Children.Add(treeNotifyPropertyChanged);
+                                treeNotifyPropertyChanged.Parent = parent;
+                                treeNotifyPropertyChanged = parent;
+                                parent.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+                                AddNewChangedDataBinding(parent);
+                            }
+                            else
+                            {
+                                if (!treeNotifyPropertyChanged.Children.Contains(findTreeNotifyPropertyChanged))
+                                    treeNotifyPropertyChanged.Children.Add(findTreeNotifyPropertyChanged);
+
+                                treeNotifyPropertyChanged = findTreeNotifyPropertyChanged;
+                                if (findTreeNotifyPropertyChanged.Properties.ContainsKey(path))
+                                    findTreeNotifyPropertyChanged.Properties[path].Add(triggerItemData);
+                                else
+                                    findTreeNotifyPropertyChanged.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+                            }
+                        }
+                        else
+                        {
+                            if (BindedTreeNotifyProperties.TryGetValue(childContext, out treeNotifyPropertyChanged))
+                            {
+                                if (findTreeNotifyPropertyChanged.Properties.ContainsKey(path))
+                                    findTreeNotifyPropertyChanged.Properties[path].Add(triggerItemData);
+                                else
+                                    findTreeNotifyPropertyChanged.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+
+                                TreeNotifyPropertyChanged parent = new TreeNotifyPropertyChanged();
+                                parent.Parent = treeNotifyPropertyChanged;
+                                treeNotifyPropertyChanged.Children.Add(parent);
+                                parent.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+                            }
+                            else
+                            {
+
+                            }
+                        }
                     }
                 }
-                i++;
-            }
-            if (propertyChanged != null)
-            {
-                Changed(propertyChanged, propertyName);
+                else
+                {
+                    TreeNotifyPropertyChanged parent = new TreeNotifyPropertyChanged();
+                    parent.Parent = treeNotifyPropertyChanged;
+                    treeNotifyPropertyChanged.Children.Add(parent);
+                    parent.Properties.Add(path, new List<TriggerItemData>() { triggerItemData });
+
+                }
             }
         }
 
@@ -300,118 +471,95 @@ namespace MvvmGo.Triggers
             public SetterInfoBase SetterInfoBase { get; set; }
         }
 
-        private static void PropertyChanged_PropertyChanged(object sender, PropertyChangedEventArgs arg)
+        private static void DoPropertyChanged(List<TriggerItemData> triggers, bool isFirstTime, INotifyPropertyChanged propertyChanged)
         {
-            if (BindedProperties.ContainsKey(arg.PropertyName))
+            List<TriggerItemChanged> Changes = new List<TriggerItemChanged>();
+            foreach (var triggerItem in triggers)
             {
-                List<TriggerItemChanged> Changes = new List<TriggerItemChanged>();
-                foreach (var triggerItem in BindedProperties[arg.PropertyName])//.Where(x => x.ConditionInfoes.Any(y => y is DataConditionInfo && ((DataConditionInfo)y).PropertyChanged == sender))
+                if (isFirstTime)
+                    FristTimeFillData(triggerItem.Element, triggerItem.Trigger, propertyChanged);
+                if (triggerItem.Trigger.Conditions.Any(x => x is DataConditionInfo y && y.PropertyChanged == null))
                 {
-                    if (triggerItem.Trigger.Condition(triggerItem.Element))
+                    FristTimeFillData(triggerItem.Element, triggerItem.Trigger, propertyChanged);
+                }
+
+                if (triggerItem.Trigger.Condition(triggerItem.Element))
+                {
+                    foreach (var setter in triggerItem.Trigger.Setters)
                     {
-                        foreach (var setter in triggerItem.Setters)
+                        if (setter is SetterInfo setterInfo)
                         {
-                            //setter.SetValue()
-                            //var target = triggerItem.Element;
-                            //if (setter.ElementName != null)
-                            //{
-                            //    target = (System.Windows.FrameworkElement)target.FindName(setter.ElementName);
-                            //}
-                            //if (target == null)
-                            //    continue;
-                            if (setter is SetterInfo setterInfo)
+                            var target = triggerItem.Element;
+                            setterInfo.SetValue(triggerItem.Element);
+                            if (setterInfo.ElementName != null)
                             {
-                                var target = triggerItem.Element;
-                                setterInfo.SetValue(triggerItem.Element);
-                                if (setterInfo.ElementName != null)
-                                {
-                                    target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
-                                }
-                                var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target );//&& x.SetterInfoBase == setter
-                                if (find != null)
-                                    find.HasChange = true;
-                                else
-                                    Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, DefaultValue = setterInfo.DefaultValue, Name = setterInfo.Property, SetterInfoBase = setter });
+                                target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
                             }
-                            else if (setter is EventSetterInfo eventSetterInfo)
+                            var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target);
+                            if (find != null)
+                                find.HasChange = true;
+                            else
+                                Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, DefaultValue = setterInfo.DefaultValue, Name = setterInfo.Property, SetterInfoBase = setter });
+                        }
+                        else if (setter is EventSetterInfo eventSetterInfo)
+                        {
+                            var target = triggerItem.Element;
+                            eventSetterInfo.SetValue(triggerItem.Element);
+                            if (eventSetterInfo.ElementName != null)
                             {
-                                var target = triggerItem.Element;
-                                eventSetterInfo.SetValue(triggerItem.Element);
-                                if (eventSetterInfo.ElementName != null)
-                                {
-                                    target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
-                                }
-                                //var eventInfo = target.GetType().GetEvent(eventSetterInfo.EventName);
-                                //if (eventInfo != null)
-                                //{
-                                //    RemoveEvent(target, eventInfo, eventSetterInfo);
-                                //    SetEvent(target, eventInfo, eventSetterInfo);
-                                //}
-                                var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target );//&& x.SetterInfoBase == setter
-                                if (find != null)
-                                    find.HasChange = true;
-                                else
-                                    Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
+                                target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
                             }
+
+                            var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);
+                            if (find != null)
+                                find.HasChange = true;
+                            else
+                                Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
                         }
                     }
-                    else
+                }
+                else
+                {
+                    foreach (var setter in triggerItem.Trigger.Setters)
                     {
-                        foreach (var setter in triggerItem.Setters)
+                        if (setter is SetterInfo setterInfo)
                         {
-                            if (setter is SetterInfo setterInfo)
+                            var target = triggerItem.Element;
+                            if (setterInfo.ElementName != null)
                             {
-                                var target = triggerItem.Element;
-                                if (setterInfo.ElementName != null)
-                                {
-                                    target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
-                                }
-
+                                target = (System.Windows.FrameworkElement)target.FindName(setterInfo.ElementName);
+                            }
+                            if (target != null)
+                            {
                                 var property = target.GetType().GetProperty(setterInfo.Property);
                                 if (property != null)
                                 {
-                                    var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target && x.SetterInfoBase == setter);
+                                    var find = Changes.FirstOrDefault(x => x.Name == setterInfo.Property && x.Target == target);// && x.SetterInfoBase == setter
                                     if (find == null)
                                         Changes.Add(new TriggerItemChanged() { HasChange = false, Target = target, DefaultValue = setterInfo.DefaultValue, Name = setterInfo.Property, SetterInfoBase = setter });
                                 }
                             }
-                            else if (setter is EventSetterInfo eventSetterInfo)
+                        }
+                        else if (setter is EventSetterInfo eventSetterInfo)
+                        {
+                            var target = triggerItem.Element;
+                            if (eventSetterInfo.ElementName != null)
                             {
-                                var target = triggerItem.Element;
-                                if (eventSetterInfo.ElementName != null)
-                                {
-                                    target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
-                                }
-                                var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target && x.SetterInfoBase == setter);
-                                if (find == null)
-                                    Changes.Add(new TriggerItemChanged() { HasChange = false, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
+                                target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
                             }
+                            var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);// && x.SetterInfoBase == setter
+                            if (find == null)
+                                Changes.Add(new TriggerItemChanged() { HasChange = false, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
                         }
                     }
                 }
+            }
 
-                foreach (var item in Changes)
+            foreach (var item in Changes)
+            {
+                if (!item.HasChange)
                 {
-                    if (!item.HasChange)
-                    {
-                        item.SetterInfoBase.SetCustomValue(item.Target, item.DefaultValue);
-                        //if (item.SetterInfoBase is SetterInfo setterInfo)
-                        //{
-                        //    var property = item.Target.GetType().GetProperty(item.Name);
-                        //    if (property != null)
-                        //    {
-                        //        SetValue(item.Target, property, item.DefaultValue);
-                        //    }
-                        //}
-                        //else if (item.SetterInfoBase is EventSetterInfo eventSetterInfo)
-                        //{
-                        //    var eventInfo = item.Target.GetType().GetEvent(eventSetterInfo.EventName);
-                        //    if (eventInfo != null)
-                        //    {
-                        //        RemoveEvent(item.Target, eventInfo, eventSetterInfo);
-                        //    }
-                        //}
-                    }
+                    item.SetterInfoBase.SetCustomValue(item.Target, item.DefaultValue);
                 }
             }
         }

@@ -42,22 +42,8 @@ namespace MvvmGo.Triggers
             var property = target.GetType().GetProperty(Property);
             if (property == null)
                 return null;
-            if (value == null)
-                property.SetValue(target, null, null);
-            else if (property.PropertyType == value.GetType())
-                property.SetValue(target, value, null);
-            else
-            {
-                if (property.PropertyType.IsEnum && !value.GetType().IsEnum)
-                    value = Enum.Parse(property.PropertyType, value.ToString());
-                else if (property.PropertyType == typeof(Cursor) && value.GetType() != typeof(Cursor))
-                {
-                    value = typeof(Cursors).GetProperty(value.ToString()).GetValue(null, null);
-                }
-                else
-                    value = Convert.ChangeType(value, property.PropertyType);
-                property.SetValue(target, value, null);
-            }
+            value = ConvertValue(value, property);
+            property.SetValue(target, value, null);
             return value;
         }
     }

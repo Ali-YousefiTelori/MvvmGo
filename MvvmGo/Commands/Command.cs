@@ -62,6 +62,7 @@ namespace MvvmGo.Commands
         Action _execute = null;
         Func<bool> _canExecute = null;
         IValidationPropertyChanged _validation = null;
+        private Action<string> changeFileName;
 
         #endregion // Fields
 
@@ -121,6 +122,12 @@ namespace MvvmGo.Commands
                 _execute();
         }
 
+
+        public void ValidateCanExecute()
+        {
+            if (CanExecuteChanged != null)
+                CanExecuteChanged?.Invoke(null, null);
+        }
         #endregion // ICommand Members
 
     }

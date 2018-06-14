@@ -198,7 +198,8 @@ namespace MvvmGo.Validations
                 var element = (FrameworkElement)s;
                 var propertyChanged = element.DataContext as IValidationPropertyChanged;
                 if (propertyChanged == null)
-                    throw new Exception($"your model have to inheritance IValidationPropertyChanged [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
+                    return;
+                   // throw new Exception($"your model have to inheritance IValidationPropertyChanged [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
                 else if (propertyChanged.AllMessages == null)
                     throw new Exception($"your model AllMessages propety cannot be null [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
                 else if (propertyChanged.MessagesByProperty == null)
@@ -228,6 +229,8 @@ namespace MvvmGo.Validations
                 PropertyInfo property = null;
 
                 property = typeOfData.GetProperty(bindingPropertyName);
+                if (property == null)
+                    throw new Exception($"property {bindingPropertyName} not found on {objectInstance}");
                 string fullNameOfProperty = typeOfData.FullName + "." + property.Name;
 
                 if (property != null)

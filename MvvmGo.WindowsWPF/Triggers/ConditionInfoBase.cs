@@ -29,6 +29,8 @@ namespace MvvmGo.Triggers
         public bool ConditionBase(object target, string propertyName)
         {
             var property = target.GetType().GetProperty(propertyName);
+            if (property == null)
+                throw new Exception($"Property {propertyName} not found on target {target.GetType().FullName}");
             var targetValue = property.GetValue(target, null);
             var sourceValue = Value;
 

@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--<Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />-->
   <PropertyGroup>
-    <TargetFrameworks>net45;net40;net35;netstandard1.6;portable45-net45+win8;portable-net45+win8+wpa81</TargetFrameworks>
+    <TargetFrameworks>net45;net40;net35;netstandard1.6;portable45-net45+win8;portable-net45+win8+wpa81;netstandard2.0;</TargetFrameworks>
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -125,15 +125,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
+    <PackageReference Include="Xamarin.Forms" Version="3.1.0.469394-pre3" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
+    <PackageReference Include="Xamarin.Forms" Version="3.1.0.469394-pre3" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
+    <PackageReference Include="Xamarin.Forms" Version="3.1.0.469394-pre3" />
+    <PackageReference Include="NETStandard.Library" Version="2.0.3" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'portable45-net45+win8'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
+    <PackageReference Include="Xamarin.Forms" Version="3.1.0.469394-pre3" />
   </ItemGroup>
     <ItemGroup Condition="'$(TargetFramework)' == 'portable-net45+win8+wpa81'">
-    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
+    <PackageReference Include="Xamarin.Forms" Version="3.1.0.469394-pre3" />
   </ItemGroup>
 </Project>
