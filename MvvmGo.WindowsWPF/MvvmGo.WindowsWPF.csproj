@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Converters\EverythingConverter.cs" />
+    <Compile Include="Converters\InverseBooleanValueConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Triggers\ConditionInfo.cs" />
     <Compile Include="Triggers\DataConditionCollection.cs" />

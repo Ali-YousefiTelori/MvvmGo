@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-#if (PORTABLE || NETSTANDARD1_6 || NETCOREAPP1_1 || __MOBILE__)
-using Xamarin.Forms;
-#endif
+using System.Windows.Data;
 
 namespace MvvmGo.Converters
 {
-#if (PORTABLE || NETSTANDARD1_6 || NETCOREAPP1_1 || __MOBILE__)
     public class InverseBooleanValueConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -25,5 +22,4 @@ namespace MvvmGo.Converters
             throw new NotImplementedException();
         }
     }
-#endif
 }
