@@ -8,7 +8,7 @@ using System.Text;
 
 namespace MvvmGo.Models
 {
-    public interface IValidationPropertyChanged : INotifyPropertyChanged
+    public interface IValidationPropertyChanged
     {
         ValidationMessageInfo FirstMessage { get; }
         ValidationMessageInfo GetFirstMessage(IEnumerable<ValidationMessageInfo> messageInfos);

@@ -52,6 +52,11 @@ namespace MvvmGo.Commands
             _execute((T)parameter);
         }
 
+        public void ValidateCanExecute(T value)
+        {
+            if (CanExecuteChanged != null)
+                CanExecuteChanged?.Invoke(value, null);
+        }
         #endregion // ICommand Members
     }
 
@@ -75,7 +80,7 @@ namespace MvvmGo.Commands
         }
 
         public Command(Action execute, IValidationPropertyChanged validation)
-            : this(execute, null, validation)
+            : this(execute,null, null, validation)
         {
 
         }
@@ -85,12 +90,13 @@ namespace MvvmGo.Commands
         /// </summary>
         /// <param name="execute">The execution logic.</param>
         /// <param name="canExecute">The execution status logic.</param>
-        public Command(Action execute, Func<bool> canExecute) : this(execute, canExecute, null)
+        /// <param name="runBeforeExecute">before run execute action if thst is async this wil run</param>
+        public Command(Action execute, Func<bool> canExecute, Action runBeforeExecute) : this(execute, canExecute, runBeforeExecute, null)
         {
 
         }
 
-        public Command(Action execute, Func<bool> canExecute, IValidationPropertyChanged validation)
+        public Command(Action execute, Func<bool> canExecute, Action runBeforeExecute, IValidationPropertyChanged validation)
         {
             if (execute == null)
                 throw new ArgumentNullException("execute");

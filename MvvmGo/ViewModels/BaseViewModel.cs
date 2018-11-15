@@ -2,13 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 
 namespace MvvmGo.ViewModels
 {
-    public class BaseViewModel : IValidationPropertyChanged
+    public class BaseViewModel : PropertyChangedViewModel, IValidationPropertyChanged
     {
         public static void Initialize()
         {
@@ -18,18 +16,28 @@ namespace MvvmGo.ViewModels
         public static bool IsDesignTime { get; set; } = true;
         public static Action<Action> RunOnUIAction { get; set; }
         public Action<string> PropertyChangedAction { get; set; }
+        /// <summary>
+        /// when busy changed
+        /// </summary>
+        public Action<bool, string> IsBusyChangedAction { get; set; }
+        public Action<string> BusyContentChangedAction { get; set; }
 
-        volatile bool _IsBusy;
-        volatile string _BusyContent;
-        volatile bool _HasError;
+        private bool _IsBusy;
+        private string _BusyContent;
+        private bool _HasError;
 
         public virtual bool IsBusy
         {
-            get => _IsBusy;
+            get
+            {
+                return _IsBusy;
+            }
+
             set
             {
                 _IsBusy = value;
                 OnPropertyChanged(nameof(IsBusy));
+                IsBusyChangedAction?.Invoke(_IsBusy, BusyContent);
             }
         }
 
@@ -43,6 +51,7 @@ namespace MvvmGo.ViewModels
             {
                 _BusyContent = value;
                 OnPropertyChanged(nameof(BusyContent));
+                BusyContentChangedAction?.Invoke(BusyContent);
             }
         }
 #if (!NET35)
@@ -52,7 +61,11 @@ namespace MvvmGo.ViewModels
 #endif
         public bool HasError
         {
-            get => _HasError;
+            get
+            {
+                return _HasError;
+            }
+
             set
             {
                 _HasError = value;
@@ -63,7 +76,7 @@ namespace MvvmGo.ViewModels
         public ValidationMessageInfo GetFirstMessage(IEnumerable<ValidationMessageInfo> messageInfos)
         {
             //find first error
-            var find = messageInfos.FirstOrDefault(x => x.Type == ValidationMessageType.Error);
+            ValidationMessageInfo find = messageInfos.FirstOrDefault(x => x.Type == ValidationMessageType.Error);
             if (find != null)
                 return find;
             //find first warning
@@ -88,21 +101,20 @@ namespace MvvmGo.ViewModels
 #else
         public Dictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new Dictionary<string, ViewModelItemsInfo>();
 #endif
-        public event PropertyChangedEventHandler PropertyChanged;
 
-        public void OnPropertyChanged(string name)
+        public override void OnPropertyChanged(string name)
         {
             if (RunOnUIAction != null)
             {
                 RunOnUIAction.Invoke(() =>
                 {
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+                    base.OnPropertyChanged(name);
                     PropertyChangedAction?.Invoke(name);
                 });
             }
             else
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+                base.OnPropertyChanged(name);
                 PropertyChangedAction?.Invoke(name);
             }
         }

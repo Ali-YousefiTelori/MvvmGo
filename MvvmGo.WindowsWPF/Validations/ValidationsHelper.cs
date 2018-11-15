@@ -207,12 +207,16 @@ namespace MvvmGo.Validations
                 var binding = System.Windows.Data.BindingOperations.GetBindingExpression(((FrameworkElement)d), descriptor.DependencyProperty);
                 if (binding == null)
                     return;
+                var property = d.GetType().GetProperty(name);
+                var objectValue = property.GetValue(d, null);
+                if (descriptor.DependencyProperty.PropertyType == typeof(string) && objectValue != null && string.IsNullOrEmpty(objectValue.ToString()) && Nullable.GetUnderlyingType(property.PropertyType) != null)
+                    property.SetValue(d, null, null);
                 if (binding != null)
                     binding.UpdateSource();
                 var bindingPropertyName = "";
                
                 bool hasError = false;
-                var mainValue = d.GetType().GetProperty(name).GetValue(d, null);
+                var mainValue = property.GetValue(d, null);
                 //propertyChanged.AllMessages.Clear();
 
                 //foreach (var item in propertyChanged.MessagesByProperty)
@@ -226,7 +230,6 @@ namespace MvvmGo.Validations
                 if (objectInstance == null)
                     return;
                 var typeOfData = objectInstance.GetType();
-                PropertyInfo property = null;
 
                 property = typeOfData.GetProperty(bindingPropertyName);
                 if (property == null)

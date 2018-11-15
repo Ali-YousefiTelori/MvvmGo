@@ -260,7 +260,7 @@ namespace MvvmGo.Triggers
             return null;
         }
 
-        static object GetValueBinding(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element)
+        internal static object GetValueBinding(System.Windows.Data.Binding binding, System.Windows.FrameworkElement element)
         {
             var allPathes = binding.Path.Path.Split('.');
             var context = element.DataContext;
@@ -275,8 +275,7 @@ namespace MvvmGo.Triggers
                 var result = context.GetType().GetProperty(path).GetValue(context, null);
                 if (result == null)
                 {
-                    propertyChanged = null;
-                    break;
+                    return null;
                 }
                 else
                 {
@@ -474,6 +473,10 @@ namespace MvvmGo.Triggers
         private static void DoPropertyChanged(List<TriggerItemData> triggers, bool isFirstTime, INotifyPropertyChanged propertyChanged)
         {
             List<TriggerItemChanged> Changes = new List<TriggerItemChanged>();
+            var exist = triggers.Any(x => x.Trigger.Setters.Any(y => y is EventSetterInfo));
+            if (exist)
+            {
+            }
             foreach (var triggerItem in triggers)
             {
                 if (isFirstTime)
@@ -510,11 +513,11 @@ namespace MvvmGo.Triggers
                                 target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
                             }
 
-                            var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);
-                            if (find != null)
-                                find.HasChange = true;
-                            else
-                                Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
+                            //var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);
+                            //if (find != null)
+                            //    find.HasChange = true;
+                            //else
+                            Changes.Add(new TriggerItemChanged() { HasChange = true, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
                         }
                     }
                 }
@@ -547,18 +550,21 @@ namespace MvvmGo.Triggers
                             {
                                 target = (System.Windows.FrameworkElement)target.FindName(eventSetterInfo.ElementName);
                             }
-                            var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);// && x.SetterInfoBase == setter
-                            if (find == null)
-                                Changes.Add(new TriggerItemChanged() { HasChange = false, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
+                            //var find = Changes.FirstOrDefault(x => x.Name == eventSetterInfo.EventName && x.Target == target);// && x.SetterInfoBase == setter
+                            Changes.Add(new TriggerItemChanged() { HasChange = false, Target = target, Name = eventSetterInfo.EventName, SetterInfoBase = setter });
                         }
                     }
                 }
             }
 
+            var exist2 = Changes.Any(x => x.SetterInfoBase is EventSetterInfo);
             foreach (var item in Changes)
             {
                 if (!item.HasChange)
                 {
+                    if (item.SetterInfoBase is EventSetterInfo)
+                    {
+                    }
                     item.SetterInfoBase.SetCustomValue(item.Target, item.DefaultValue);
                 }
             }
@@ -584,7 +590,7 @@ namespace MvvmGo.Triggers
                 }
             }
 
-            EventHandlerInfo eventHandlerInfo = new EventHandlerInfo() { EventCommand = eventSetterInfo.Command, CommandParameter = parameterValue };
+            EventHandlerInfo eventHandlerInfo = new EventHandlerInfo() { EventCommand = eventSetterInfo.Command, Target = target, EventSetterInfo = eventSetterInfo, CommandParameter = parameterValue };
             var parameters = eventInfo.EventHandlerType.GetMethod("Invoke").GetParameters();
             var method = eventHandlerInfo.GetType().GetMethods().FirstOrDefault(x => x.Name == "Run" && x.GetParameters().Length == parameters.Length).MakeGenericMethod(parameters.Select(x => x.ParameterType).ToArray());
 
@@ -598,8 +604,44 @@ namespace MvvmGo.Triggers
             if (eventSetterInfo.Handler == null)
                 return;
             eventInfo.RemoveEventHandler(target, eventSetterInfo.Handler);
+            var find = GetEventHandler(target, eventInfo.Name);
         }
-
+        /// <summary>
+        /// Gets the EventHandler delegate attached to the specified event and object
+        /// </summary>
+        /// <param name="obj">object that contains the event</param>
+        /// <param name="eventName">name of the event, e.g. "Click"</param>
+        public static Delegate GetEventHandler(object obj, string eventName)
+        {
+            Delegate retDelegate = null;
+            FieldInfo fi = obj.GetType().GetField("Event" + eventName,
+                                                   BindingFlags.NonPublic |
+                                                   BindingFlags.Static |
+                                                   BindingFlags.Instance |
+                                                   BindingFlags.FlattenHierarchy |
+                                                   BindingFlags.IgnoreCase);
+            if (fi != null)
+            {
+                object value = fi.GetValue(obj);
+                if (value is Delegate)
+                    retDelegate = (Delegate)value;
+                else if (value != null) // value may be just object
+                {
+                    PropertyInfo pi = obj.GetType().GetProperty("Events",
+                                                   BindingFlags.NonPublic |
+                                                   BindingFlags.Instance);
+                    if (pi != null)
+                    {
+                        EventHandlerList eventHandlers = pi.GetValue(obj, null) as EventHandlerList;
+                        if (eventHandlers != null)
+                        {
+                            retDelegate = eventHandlers[value];
+                        }
+                    }
+                }
+            }
+            return retDelegate;
+        }
         internal static void FireEvent(object onMe, string invokeMe, params object[] eventParams)
         {
             MulticastDelegate eventDelagate =
