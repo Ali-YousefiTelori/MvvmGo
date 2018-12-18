@@ -85,6 +85,11 @@ namespace MvvmGo.Commands
 
         }
 
+        public Command(Action execute, Func<bool> canExecute) : this(execute, canExecute, null, null)
+        {
+
+        }
+
         /// <summary>
         /// Creates a new command.
         /// </summary>
@@ -101,7 +106,11 @@ namespace MvvmGo.Commands
             if (execute == null)
                 throw new ArgumentNullException("execute");
             _validation = validation;
-            _execute = execute;
+            _execute = ()=>
+            {
+                runBeforeExecute?.Invoke();
+                execute();
+            };
             _canExecute = canExecute;
         }
 
