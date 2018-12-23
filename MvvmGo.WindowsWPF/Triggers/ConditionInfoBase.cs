@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MvvmGo.Triggers
 {
@@ -28,29 +25,29 @@ namespace MvvmGo.Triggers
 
         public bool ConditionBase(object target, string propertyName)
         {
-            var property = target.GetType().GetProperty(propertyName);
+            System.Reflection.PropertyInfo property = target.GetType().GetProperty(propertyName);
             if (property == null)
                 throw new Exception($"Property {propertyName} not found on target {target.GetType().FullName}");
-            var targetValue = property.GetValue(target, null);
-            var sourceValue = Value;
+            object targetValue = property.GetValue(target, null);
+            object sourceValue = Value;
 
-            if (targetValue.GetType() == sourceValue.GetType())
+            if (targetValue != null && targetValue.GetType() == sourceValue.GetType())
             {
-                var result = targetValue.Equals(sourceValue);
+                bool result = targetValue.Equals(sourceValue);
                 if (IsInvert)
                     return !result;
                 return result;
             }
             else if (targetValue == sourceValue)
             {
-                var result = targetValue.Equals(sourceValue);
+                bool result = targetValue.Equals(sourceValue);
                 if (IsInvert)
                     return !result;
                 return result;
             }
             else if (sourceValue == null)
             {
-                var result = false;
+                bool result = false;
                 if (IsInvert)
                     return !result;
                 return result;
@@ -69,9 +66,11 @@ namespace MvvmGo.Triggers
                 {
 
                 }
-                var result = targetValue.Equals(sourceValue);
+
+                bool result = targetValue == null ? targetValue == sourceValue : targetValue.Equals(sourceValue);
                 if (IsInvert)
                     return !result;
+
                 return result;
             }
         }
