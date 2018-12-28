@@ -10,6 +10,8 @@ namespace MvvmGo.ViewModels
 {
     public class ValidationMessageViewModel : INotifyPropertyChanged
     {
+        public static List<Action> AllPropertyChanges { get; set; } = new List<Action>();
+
         public string PropertyName { get; set; }
         public IValidationPropertyChanged CurrentViewModel { get; set; }
         public ValidationMessageInfo FirstMessage
@@ -51,5 +53,14 @@ namespace MvvmGo.ViewModels
             }
         }
         public event PropertyChangedEventHandler PropertyChanged;
+
+
+        public static void AllValidationChanged()
+        {
+            foreach (var item in AllPropertyChanges)
+            {
+                item();
+            }
+        }
     }
 }

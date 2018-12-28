@@ -1,8 +1,5 @@
 ﻿using MvvmGo.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Input;
 
 namespace MvvmGo.Commands
@@ -12,8 +9,8 @@ namespace MvvmGo.Commands
     {
         #region Fields
 
-        readonly Action<T> _execute = null;
-        readonly Predicate<T> _canExecute = null;
+        private readonly Action<T> _execute = null;
+        private readonly Predicate<T> _canExecute = null;
 
         #endregion // Fields
 
@@ -64,23 +61,23 @@ namespace MvvmGo.Commands
     {
         #region Fields
 
-        Action _execute = null;
-        Func<bool> _canExecute = null;
-        IValidationPropertyChanged _validation = null;
-        private Action<string> changeFileName;
+        private readonly Action _execute = null;
+        private readonly Func<bool> _canExecute = null;
+        private IValidationPropertyChanged _validation = null;
+        private readonly Action<string> changeFileName;
 
         #endregion // Fields
 
         #region Constructors
 
         public Command(Action execute)
-            : this(execute, null, null)
+            : this(execute, null, null, null)
         {
 
         }
 
         public Command(Action execute, IValidationPropertyChanged validation)
-            : this(execute,null, null, validation)
+            : this(execute, null, null, validation)
         {
 
         }
@@ -90,6 +87,10 @@ namespace MvvmGo.Commands
 
         }
 
+        public Command(Action execute, Func<bool> canExecute, IValidationPropertyChanged validation) : this(execute, canExecute, null, validation)
+        {
+
+        }
         /// <summary>
         /// Creates a new command.
         /// </summary>
@@ -106,7 +107,7 @@ namespace MvvmGo.Commands
             if (execute == null)
                 throw new ArgumentNullException("execute");
             _validation = validation;
-            _execute = ()=>
+            _execute = () =>
             {
                 runBeforeExecute?.Invoke();
                 execute();

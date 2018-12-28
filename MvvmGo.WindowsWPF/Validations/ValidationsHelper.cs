@@ -154,7 +154,6 @@ namespace MvvmGo.Validations
         }
 
         static ConcurrentDictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>> PropertyValidations = new ConcurrentDictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>>();
-
         internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, Type modelType, string propertyName, params ValidationAttribute[] validationAttributes)
         {
             if (PropertyValidations.ContainsKey(viewModel))
@@ -321,6 +320,10 @@ namespace MvvmGo.Validations
             {
                 action(d, null);
             };
+            ValidationMessageViewModel.AllPropertyChanges.Add(() =>
+            {
+                action(d, null);
+            });
             descriptor.AddValueChanged(d, action);
             //if (d is FrameworkElement el)
             //    el.Unloaded += (sender, args) =>
