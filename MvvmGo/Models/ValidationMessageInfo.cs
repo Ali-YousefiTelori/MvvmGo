@@ -17,6 +17,7 @@ namespace MvvmGo.Models
     {
         public string PropertyName { get; set; }
         public ValidationMessageType Type { get; set; }
+        public string Title { get; set; }
         public string Message { get; set; }
         public int Count { get; set; }
 

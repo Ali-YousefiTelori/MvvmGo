@@ -1,8 +1,4 @@
 ﻿using MvvmGo.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace MvvmGo.Triggers
 {
@@ -15,45 +11,45 @@ namespace MvvmGo.Triggers
 
         public void Run()
         {
-            if (CommandParameter == null)
-                SetCommandParameter();
+            //if (CommandParameter == null)
+            SetCommandParameter();
             EventCommand.Execute(CommandParameter);
         }
 
         public void Run<T1>(T1 value1)
         {
-            if (CommandParameter == null)
-                SetCommandParameter();
+            //if (CommandParameter == null)
+            SetCommandParameter();
             EventCommand.Execute(CommandParameter, value1);
         }
 
         public void Run<T1, T2>(T1 value1, T2 value2)
         {
-            if (CommandParameter == null)
-                SetCommandParameter();
+            //if (CommandParameter == null)
+            SetCommandParameter();
             EventCommand.Execute(CommandParameter, value1, value2);
         }
 
         public void Run<T1, T2, T3>(T1 value1, T2 value2, T3 value3)
         {
-            if (CommandParameter == null)
-                SetCommandParameter();
+            //if (CommandParameter == null)
+            SetCommandParameter();
             EventCommand.Execute(CommandParameter, value1, value2, value3);
         }
 
         public void Run<T1, T2, T3, T4>(T1 value1, T2 value2, T3 value3, T4 value4)
         {
-            if (CommandParameter == null)
-                SetCommandParameter();
+            //if (CommandParameter == null)
+            SetCommandParameter();
             EventCommand.Execute(CommandParameter, value1, value2, value3, value4);
         }
 
-        void SetCommandParameter()
+        private void SetCommandParameter()
         {
-            var parameterValue = EventSetterInfo.GetValue(EventSetterInfo.CommandParameterProperty);
+            object parameterValue = EventSetterInfo.GetValue(EventSetterInfo.CommandParameterProperty);
             if (parameterValue == null)
             {
-                var binding = System.Windows.Data.BindingOperations.GetBinding(EventSetterInfo, EventSetterInfo.CommandParameterProperty);
+                System.Windows.Data.Binding binding = System.Windows.Data.BindingOperations.GetBinding(EventSetterInfo, EventSetterInfo.CommandParameterProperty);
                 if (binding != null)
                 {
                     if (binding.Path == null)

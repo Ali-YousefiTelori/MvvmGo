@@ -266,6 +266,8 @@ namespace MvvmGo.Triggers
             var context = element.DataContext;
             if (binding.Source != null)
                 context = binding.Source as INotifyPropertyChanged;
+            if (context == null)
+                return null;
             INotifyPropertyChanged propertyChanged = context as INotifyPropertyChanged;
 
             string propertyName = "";
