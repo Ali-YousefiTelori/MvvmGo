@@ -22,7 +22,7 @@ namespace MvvmGo.Triggers
         public virtual bool Condition(object target)
         {
             if (Conditions.Count == 0)
-                return false;
+                return true;
             bool result = true;
             foreach (var item in Conditions)
             {

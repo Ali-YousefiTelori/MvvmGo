@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Windows;
 using System.Windows.Data;
 
 namespace MvvmGo.Converters
@@ -25,7 +23,7 @@ namespace MvvmGo.Converters
 
         public object NullResultValue { get; set; }
         public object NullBackValue { get; set; }
-
+        public object FromMarkupValue { get; set; }
         public object Convert(object value, Type targetType,
             object parameter, CultureInfo culture)
         {
@@ -40,12 +38,15 @@ namespace MvvmGo.Converters
                     return Conditions.Select(x => x.ConditionValue).ToList();
                 }
             }
-            return Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
+            if (FromMarkupValue != null)
+                return Conditions.Where(x => x.ConditionValue.Equals(FromMarkupValue)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
+            else
+                return Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
         }
         public object ConvertBack(object value, Type targetType,
             object parameter, CultureInfo culture)
         {
-            var find = Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault() ?? Conditions.Where(x => x.ResultValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault();
+            object find = Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault() ?? Conditions.Where(x => x.ResultValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault();
             return find ?? NullBackValue;
         }
     }

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MvvmGo</RootNamespace>
     <AssemblyName>MvvmGo.WindowsWPF</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -56,6 +58,7 @@
     <Compile Include="Triggers\DataTriggerInfo.cs" />
     <Compile Include="Triggers\EventHandlerInfo.cs" />
     <Compile Include="Triggers\EventSetterInfo.cs" />
+    <Compile Include="Triggers\EventTriggerInfo.cs" />
     <Compile Include="Triggers\SetterCollectionInfo.cs" />
     <Compile Include="Triggers\SetterInfo.cs" />
     <Compile Include="Triggers\SetterInfoBase.cs" />
@@ -63,11 +66,12 @@
     <Compile Include="Triggers\TriggerExtensions.cs" />
     <Compile Include="Triggers\TriggerBaseInfo.cs" />
     <Compile Include="Triggers\TriggerInfo.cs" />
+    <Compile Include="Validations\CustomValidationRule.cs" />
     <Compile Include="Validations\ValidationsHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MvvmGo\MvvmGo.csproj">
-      <Project>{0a26a5fc-9aa7-4430-a6ca-63f7527037e3}</Project>
+      <Project>{ba8b6f90-d952-4395-ab07-3f8529d408d1}</Project>
       <Name>MvvmGo</Name>
     </ProjectReference>
   </ItemGroup>

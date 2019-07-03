@@ -10,6 +10,7 @@ namespace MvvmGo.ViewModels
 {
     public class ValidationMessageViewModel : INotifyPropertyChanged
     {
+        public Action OnValidationChanged { get; set; }
         public static List<Action> AllPropertyChanges { get; set; } = new List<Action>();
 
         public string PropertyName { get; set; }
@@ -34,6 +35,7 @@ namespace MvvmGo.ViewModels
 
         public void Validate()
         {
+            OnValidationChanged?.Invoke();
             OnPropertyChanged(nameof(HasError));
             OnPropertyChanged(nameof(FirstMessage));
         }

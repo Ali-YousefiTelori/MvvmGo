@@ -1,4 +1,5 @@
-﻿using MvvmGo.Models;
+﻿using MvvmGo.Commands;
+using MvvmGo.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -70,6 +71,7 @@ namespace MvvmGo.ViewModels
             {
                 _HasError = value;
                 OnPropertyChanged(nameof(HasError));
+                ValidateCanExecute();
             }
         }
 
@@ -117,6 +119,21 @@ namespace MvvmGo.ViewModels
                 base.OnPropertyChanged(name);
                 PropertyChangedAction?.Invoke(name);
             }
+        }
+
+        void ValidateCanExecute()
+        {
+#if (!NET35 && !NET40 && !NETSTANDARD1_6)
+            foreach (var item in this.GetType().GetProperties())
+            {
+                if (item.PropertyType == typeof(Command))
+                {
+                    var pValue = item.GetValue(this, null);
+                    var method = item.PropertyType.GetMethod("ValidateCanExecute");
+                    method.Invoke(pValue, null);
+                }
+            }
+#endif
         }
     }
 }

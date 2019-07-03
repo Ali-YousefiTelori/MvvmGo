@@ -81,6 +81,29 @@ namespace MvvmGo.Triggers
                     }
                     GenerateConditions(dataConditionInfoes, element, item);
                 }
+                if (item is EventTriggerInfo eventTriggerInfo)
+                {
+#if (!NET35 && !NET40)
+                    List<ConditionInfoBase> dataConditionInfoes = new List<ConditionInfoBase>();
+                    SetEvent(element, element.GetType().GetEvent(eventTriggerInfo.EventName), new EventSetterInfo()
+                    {
+                        Command = new MvvmGo.Commands.EventCommand(() =>
+                        {
+                            if (eventTriggerInfo.Condition(element))
+                            {
+                                foreach (var setter in eventTriggerInfo.Setters)
+                                {
+                                    setter.SetValue(element);
+                                }
+                            }
+                        })
+                    });
+                    
+                    dataConditionInfoes.AddRange(eventTriggerInfo.Conditions);
+
+                    GenerateConditions(dataConditionInfoes, element, item);
+#endif
+                }
                 else if (item is TriggerInfo triggerInfo)
                 {
                     List<ConditionInfoBase> dataConditionInfoes = new List<ConditionInfoBase>();

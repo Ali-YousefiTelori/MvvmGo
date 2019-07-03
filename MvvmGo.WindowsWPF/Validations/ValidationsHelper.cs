@@ -10,7 +10,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Markup;
 using System.Windows.Media;
+using System.Xaml;
 
 namespace MvvmGo.Validations
 {
@@ -72,6 +76,38 @@ namespace MvvmGo.Validations
             return builder;
         }
     }
+    //public class ErrorMessage : MarkupExtension
+    //{
+    //    public static readonly DependencyProperty ElementProperty = DependencyProperty.RegisterAttached("Element", typeof(UIElement), typeof(ErrorMessage), new PropertyMetadata(new PropertyChangedCallback(OnPropertyPropertyChanged)));
+
+    //    private static void OnPropertyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    //    {
+    //    }
+
+    //    public static UIElement GetElement(FrameworkElement frameworkElement)
+    //    {
+    //        return (UIElement)frameworkElement.GetValue(ElementProperty);
+    //    }
+
+    //    public static void SetElement(FrameworkElement frameworkElement, UIElement propertyName)
+    //    {
+    //        frameworkElement.SetValue(ElementProperty, propertyName);
+    //    }
+    //    public ErrorMessage(string methodName)
+    //    {
+    //    }
+
+    //    public override object ProvideValue(IServiceProvider serviceProvider)
+    //    {
+    //        IRootObjectProvider rootProvider = serviceProvider.GetService(typeof(IRootObjectProvider)) as IRootObjectProvider;
+    //        IProvideValueTarget target = serviceProvider.GetService(typeof(IProvideValueTarget)) as IProvideValueTarget;
+    //        var provideValueTarget = (IProvideValueTarget)serviceProvider.GetService(typeof(IProvideValueTarget));
+    //        var bindingExpression = BindingOperations.GetBindingExpression((DependencyObject)provideValueTarget.TargetObject, (DependencyProperty)provideValueTarget.TargetProperty);
+    //        var source = bindingExpression.DataItem;
+    //        return "ok ok";
+    //        //return bin.ProvideValue(serviceProvider);
+    //    }
+    //}
 
     public class ValidationsHelper
     {
@@ -116,9 +152,12 @@ namespace MvvmGo.Validations
                     var property = ((FrameworkElement)parent).GetType().GetProperty(propertyName);
 
                     var descriptor = DependencyPropertyDescriptor.FromName(propertyName, parent.GetType(), parent.GetType());
+                    if (descriptor == null)
+                        break;
                     var binding = System.Windows.Data.BindingOperations.GetBindingExpression(((FrameworkElement)parent), descriptor.DependencyProperty);
                     if (binding == null)
                         break;
+                    
                     var element = (FrameworkElement)d;
                     var viewModel = ((FrameworkElement)parent).DataContext as IValidationPropertyChanged;
                     if (viewModel == null)
@@ -131,12 +170,13 @@ namespace MvvmGo.Validations
 
                     if (!viewModel.MessagesByProperty.ContainsKey(fullNameOfProperty))
                     {
-                        viewModel.MessagesByProperty[fullNameOfProperty] = new ViewModelItemsInfo
+                        var myValidations = viewModel.MessagesByProperty[fullNameOfProperty] = new ViewModelItemsInfo
                         {
                             Items = new ObservableCollection<ValidationMessageInfo>()
                         };
+                        
                     }
-
+                  
                     var data = viewModel.MessagesByProperty[fullNameOfProperty].ViewModel = new ValidationMessageViewModel() { CurrentViewModel = viewModel, PropertyName = fullNameOfProperty };
                     var propertyBindName = de.NewValue.ToString();
                     var propertyBind = element.GetType().GetProperty(propertyBindName);
@@ -182,7 +222,6 @@ namespace MvvmGo.Validations
                 PropertyValidations.TryAdd(viewModel, new Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>() { { modelType, new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } } } });
             }
         }
-
         public static void OnPropertyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs de)
         {
             if (BaseViewModel.IsDesignTime)
@@ -198,11 +237,19 @@ namespace MvvmGo.Validations
                 var propertyChanged = element.DataContext as IValidationPropertyChanged;
                 if (propertyChanged == null)
                     return;
-                   // throw new Exception($"your model have to inheritance IValidationPropertyChanged [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
+                // throw new Exception($"your model have to inheritance IValidationPropertyChanged [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
                 else if (propertyChanged.AllMessages == null)
                     throw new Exception($"your model AllMessages propety cannot be null [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
                 else if (propertyChanged.MessagesByProperty == null)
                     throw new Exception($"your model MessagesByProperty propety cannot be null [model type]: [{s.GetType()}] [binding type]: [{de.Property.PropertyType}]");
+                if (descriptor == null && element is PasswordBox password)
+                {
+                    if (password.DataContext is BaseViewModel bvm)
+                    {
+                        bvm.OnPropertyChanged(name);
+                    }
+                    return;
+                }
                 var binding = System.Windows.Data.BindingOperations.GetBindingExpression(((FrameworkElement)d), descriptor.DependencyProperty);
                 if (binding == null)
                     return;
@@ -213,7 +260,7 @@ namespace MvvmGo.Validations
                 if (binding != null)
                     binding.UpdateSource();
                 var bindingPropertyName = "";
-               
+
                 bool hasError = false;
                 var mainValue = property.GetValue(d, null);
                 //propertyChanged.AllMessages.Clear();
@@ -305,13 +352,21 @@ namespace MvvmGo.Validations
                             }
                             propertyChanged.MessagesByProperty[fullNameOfProperty].ViewModel?.Validate();
                         }
+                        else
+                            return;
                     }
                 }
                 if (!hasError)
                 {
                     propertyChanged.AllMessages.Remove(propertyChanged.AllMessages.FirstOrDefault(x => x.PropertyName == bindingPropertyName));
                 }
-
+                var myErrors = propertyChanged.MessagesByProperty[fullNameOfProperty];
+                binding.ParentBinding.ValidationRules.Clear();
+                foreach (var item in myErrors.Items)
+                {
+                    binding.ParentBinding.ValidationRules.Add(new CustomValidationRule(item));
+                }
+                binding.UpdateSource();
                 propertyChanged.HasError = propertyChanged.AllMessages.Count(x => x.Type == ValidationMessageType.Error) > 0;
                 propertyChanged.OnPropertyChanged(nameof(propertyChanged.FirstMessage));
             });
@@ -324,7 +379,15 @@ namespace MvvmGo.Validations
             {
                 action(d, null);
             });
-            descriptor.AddValueChanged(d, action);
+            if (descriptor == null && d is PasswordBox passwordBox)
+            {
+                passwordBox.PasswordChanged += (s, e) =>
+                {
+                    action(s, null);
+                };
+            }
+            else
+                descriptor.AddValueChanged(d, action);
             //if (d is FrameworkElement el)
             //    el.Unloaded += (sender, args) =>
             //    {
@@ -337,7 +400,7 @@ namespace MvvmGo.Validations
             var context = binding.DataItem;
 
             var allPathes = binding.ParentBinding.Path.Path.Split('.');
-           
+
             propertyName = "";
             int i = 1;
             foreach (var path in allPathes)
@@ -345,7 +408,7 @@ namespace MvvmGo.Validations
                 propertyName = path;
                 if (i != allPathes.Length)
                 {
-                    if (context !=null)
+                    if (context != null)
                     {
                         context = context.GetType().GetProperty(path).GetValue(context, null);
                     }
