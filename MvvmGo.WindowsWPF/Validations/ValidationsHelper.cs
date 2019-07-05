@@ -18,64 +18,8 @@ using System.Xaml;
 
 namespace MvvmGo.Validations
 {
-    public class ValidationsBuilder
-    {
-        public List<IValidationPropertyChanged> ViewModels { get; set; } = new List<IValidationPropertyChanged>();
-        public List<Type> ModelTypes { get; set; } = new List<Type>();
-        public List<string> Properties { get; set; } = new List<string>();
-        public List<ValidationAttribute> Validations { get; set; } = new List<ValidationAttribute>();
-    }
 
-    public static class ValidationsHelperExtensions
-    {
-        public static ValidationsBuilder AddViewModels(this ValidationsBuilder builder, params IValidationPropertyChanged[] viewModels)
-        {
-            builder.ViewModels.AddRange(viewModels);
-            return builder;
-        }
 
-        public static ValidationsBuilder AddTypes(this ValidationsBuilder builder, params Type[] modelTypes)
-        {
-            builder.ModelTypes.AddRange(modelTypes);
-            return builder;
-        }
-
-        public static ValidationsBuilder AddProperties(this ValidationsBuilder builder, params string[] propertyNames)
-        {
-            builder.Properties.AddRange(propertyNames);
-            return builder;
-        }
-
-        public static ValidationsBuilder AddValidations(this ValidationsBuilder builder, params ValidationAttribute[] validationAttributes)
-        {
-            builder.Validations.AddRange(validationAttributes);
-            return builder;
-        }
-
-        public static ValidationsBuilder ClearValidationAndProperties(this ValidationsBuilder builder)
-        {
-            builder.Validations.Clear();
-            builder.Properties.Clear();
-            return builder;
-        }
-
-        public static ValidationsBuilder Build(this ValidationsBuilder builder, bool clearValidationsAndProperties = false)
-        {
-            foreach (var viewmodel in builder.ViewModels)
-            {
-                foreach (var modelType in builder.ModelTypes)
-                {
-                    foreach (var property in builder.Properties)
-                    {
-                        ValidationsHelper.AddPropertyValidation(viewmodel, modelType, property, builder.Validations.ToArray());
-                    }
-                }
-            }
-            if (clearValidationsAndProperties)
-                return builder.ClearValidationAndProperties();
-            return builder;
-        }
-    }
     //public class ErrorMessage : MarkupExtension
     //{
     //    public static readonly DependencyProperty ElementProperty = DependencyProperty.RegisterAttached("Element", typeof(UIElement), typeof(ErrorMessage), new PropertyMetadata(new PropertyChangedCallback(OnPropertyPropertyChanged)));
@@ -193,35 +137,6 @@ namespace MvvmGo.Validations
             emptyPpropertyBind.SetValue(emptyElement, null, null);
         }
 
-        static ConcurrentDictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>> PropertyValidations = new ConcurrentDictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>>();
-        internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, Type modelType, string propertyName, params ValidationAttribute[] validationAttributes)
-        {
-            if (PropertyValidations.ContainsKey(viewModel))
-            {
-                if (PropertyValidations.TryGetValue(viewModel, out Dictionary<Type, Dictionary<string, List<ValidationAttribute>>> dictionary))
-                {
-                    if (dictionary.ContainsKey(modelType))
-                    {
-                        if (!dictionary[modelType].ContainsKey(propertyName))
-                            dictionary[modelType][propertyName] = new List<ValidationAttribute>(validationAttributes);
-                        else
-                            dictionary[modelType][propertyName].AddRange(validationAttributes);
-                    }
-                    else
-                    {
-                        dictionary[modelType] = new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } };
-                    }
-                }
-                else
-                {
-                    PropertyValidations.TryAdd(viewModel, new Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>() { { modelType, new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } } } });
-                }
-            }
-            else
-            {
-                PropertyValidations.TryAdd(viewModel, new Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>() { { modelType, new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } } } });
-            }
-        }
         public static void OnPropertyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs de)
         {
             if (BaseViewModel.IsDesignTime)
@@ -284,10 +199,10 @@ namespace MvvmGo.Validations
 
                 if (property != null)
                 {
-                    if (PropertyValidations.ContainsKey(propertyChanged) && PropertyValidations[propertyChanged].ContainsKey(typeOfData)
-                    && PropertyValidations[propertyChanged][typeOfData].ContainsKey(bindingPropertyName))
+                    if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && ValidationsHelperExtensions.PropertyValidations[propertyChanged].ContainsKey(typeOfData)
+                    && ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData].ContainsKey(bindingPropertyName))
                     {
-                        var attributes = PropertyValidations[propertyChanged][typeOfData][bindingPropertyName];
+                        var attributes = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData][bindingPropertyName];
                         if (attributes.Count > 0)
                         {
                             if (propertyChanged.MessagesByProperty.ContainsKey(fullNameOfProperty))
