@@ -25,5 +25,6 @@ namespace MvvmGo.Models
 #endif
         bool HasError { get; set; }
         void OnPropertyChanged(string name);
+        void ValidateCanExecute();
     }
 }

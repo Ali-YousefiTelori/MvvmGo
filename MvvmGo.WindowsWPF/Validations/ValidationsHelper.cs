@@ -101,7 +101,7 @@ namespace MvvmGo.Validations
                     var binding = System.Windows.Data.BindingOperations.GetBindingExpression(((FrameworkElement)parent), descriptor.DependencyProperty);
                     if (binding == null)
                         break;
-                    
+
                     var element = (FrameworkElement)d;
                     var viewModel = ((FrameworkElement)parent).DataContext as IValidationPropertyChanged;
                     if (viewModel == null)
@@ -118,9 +118,9 @@ namespace MvvmGo.Validations
                         {
                             Items = new ObservableCollection<ValidationMessageInfo>()
                         };
-                        
+
                     }
-                  
+
                     var data = viewModel.MessagesByProperty[fullNameOfProperty].ViewModel = new ValidationMessageViewModel() { CurrentViewModel = viewModel, PropertyName = fullNameOfProperty };
                     var propertyBindName = de.NewValue.ToString();
                     var propertyBind = element.GetType().GetProperty(propertyBindName);
@@ -202,37 +202,59 @@ namespace MvvmGo.Validations
                     if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && ValidationsHelperExtensions.PropertyValidations[propertyChanged].ContainsKey(typeOfData)
                     && ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData].ContainsKey(bindingPropertyName))
                     {
-                        var attributes = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData][bindingPropertyName];
-                        if (attributes.Count > 0)
+                        var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData];
+                        foreach (var propertyValidation in properties)
                         {
-                            if (propertyChanged.MessagesByProperty.ContainsKey(fullNameOfProperty))
-                                propertyChanged.MessagesByProperty[fullNameOfProperty].Items.Clear();
-                            else
-                                propertyChanged.MessagesByProperty[fullNameOfProperty] = new ViewModelItemsInfo()
-                                {
-                                    Items = new ObservableCollection<ValidationMessageInfo>(),
-                                    ViewModel = new ValidationMessageViewModel() { CurrentViewModel = propertyChanged, PropertyName = fullNameOfProperty }
-                                };
-
-                            foreach (ValidationAttribute attrib in attributes)
+                            if (propertyValidation.Value.Properties.Count > 0)
                             {
-                                //var valueOfProperty = property.GetValue(objectInstance, null);
-                                var error = attrib.GetMessage(mainValue);
-                                if (error != null)
-                                {
-                                    error.PropertyName = bindingPropertyName;
-                                    hasError = true;
-                                    propertyChanged.AllMessages.Remove(propertyChanged.AllMessages.FirstOrDefault(x => x.PropertyName == bindingPropertyName));
-                                    propertyChanged.AllMessages.Add(error);
+                                bool myHasError = false;
 
-                                    propertyChanged.MessagesByProperty[fullNameOfProperty].Items.Remove(
-                                        propertyChanged.MessagesByProperty[fullNameOfProperty].Items.FirstOrDefault(x => x.PropertyName == bindingPropertyName));
-                                    propertyChanged.MessagesByProperty[fullNameOfProperty].Items.Add(error);
-                                    break;
+                                foreach (var validateProp in propertyValidation.Value.Properties)
+                                {
+                                    var myFullNameOfProperty = typeOfData.FullName + "." + validateProp.Name;
+                                    if (propertyChanged.MessagesByProperty.ContainsKey(myFullNameOfProperty))
+                                        propertyChanged.MessagesByProperty[myFullNameOfProperty].Items.Clear();
+                                    else
+                                        propertyChanged.MessagesByProperty[myFullNameOfProperty] = new ViewModelItemsInfo()
+                                        {
+                                            Items = new ObservableCollection<ValidationMessageInfo>(),
+                                            ViewModel = new ValidationMessageViewModel() { CurrentViewModel = propertyChanged, PropertyName = myFullNameOfProperty }
+                                        };
+                                    foreach (var attrib in validateProp.Validations)
+                                    {
+                                        ValidationMessageInfo error = null;
+                                        if (validateProp.Name == property.Name)
+                                            error = attrib.GetMessage(mainValue);
+                                        else
+                                        {
+                                            var myproperty = objectInstance.GetType().GetProperty(validateProp.Name);
+                                            var value = myproperty.GetValue(objectInstance);
+                                            error = attrib.GetMessage(value);
+                                        }
+                                        if (error != null)
+                                        {
+                                            error.PropertyName = validateProp.Name;
+                                            myHasError = true;
+                                            if (validateProp.Name == property.Name)
+                                            {
+                                                propertyChanged.AllMessages.Remove(propertyChanged.AllMessages.FirstOrDefault(x => x.PropertyName == validateProp.Name));
+                                                propertyChanged.AllMessages.Add(error);
+                                            }
+                                            propertyChanged.MessagesByProperty[myFullNameOfProperty].Items.Remove(
+                                                propertyChanged.MessagesByProperty[myFullNameOfProperty].Items.FirstOrDefault(x => x.PropertyName == validateProp.Name));
+                                            propertyChanged.MessagesByProperty[myFullNameOfProperty].Items.Add(error);
+                                            propertyChanged.MessagesByProperty[myFullNameOfProperty].ViewModel?.Validate();
+
+                                            break;
+                                        }
+                                    }
                                 }
+                                propertyValidation.Value.HasError = myHasError;
+                                if (myHasError)
+                                    hasError = true;
                             }
-                            propertyChanged.MessagesByProperty[fullNameOfProperty].ViewModel?.Validate();
                         }
+
                     }
                     else
                     {

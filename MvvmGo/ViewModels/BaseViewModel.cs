@@ -121,7 +121,7 @@ namespace MvvmGo.ViewModels
             }
         }
 
-        void ValidateCanExecute()
+        public void ValidateCanExecute()
         {
 #if (!NET35 && !NET40 && !NETSTANDARD1_6)
             foreach (var item in this.GetType().GetProperties())
@@ -130,7 +130,8 @@ namespace MvvmGo.ViewModels
                 {
                     var pValue = item.GetValue(this, null);
                     var method = item.PropertyType.GetMethod("ValidateCanExecute");
-                    method.Invoke(pValue, null);
+                    if (pValue != null)
+                        method.Invoke(pValue, null);
                 }
             }
 #endif

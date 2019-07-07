@@ -1,4 +1,5 @@
 ﻿using MvvmGo.Models;
+using MvvmGo.Validations;
 using System;
 using System.Windows.Input;
 //#if (NETSTANDARD2_0 || NETCOREAPP2_0)
@@ -99,11 +100,10 @@ namespace MvvmGo.Commands
     {
         #region Fields
 
-        private readonly Action _execute = null;
-        private readonly Func<bool> _canExecute = null;
+        private Action _execute = null;
+        private Func<bool> _canExecute = null;
         private IValidationPropertyChanged _validation = null;
-        private readonly Action<string> changeFileName;
-
+        private ValidationsBuilder _validationsBuilder;
         #endregion // Fields
 
         #region Constructors
@@ -119,7 +119,10 @@ namespace MvvmGo.Commands
         {
 
         }
-
+        public Command(Action execute, ValidationsBuilder validation)
+        {
+            GroupValidation(execute, null, null, validation);
+        }
         public Command(Action execute, Func<bool> canExecute) : this(execute, canExecute, null, null)
         {
 
@@ -128,6 +131,10 @@ namespace MvvmGo.Commands
         public Command(Action execute, Func<bool> canExecute, IValidationPropertyChanged validation) : this(execute, canExecute, null, validation)
         {
 
+        }
+        public Command(Action execute, Func<ValidationsBuilder, bool> canExecute, ValidationsBuilder validation)
+        {
+            GroupValidation(execute, canExecute, null, validation);
         }
         /// <summary>
         /// Creates a new command.
@@ -151,6 +158,21 @@ namespace MvvmGo.Commands
                 execute();
             };
             _canExecute = canExecute;
+        }
+        public void GroupValidation(Action execute, Func<ValidationsBuilder, bool> canExecute, Action runBeforeExecute, ValidationsBuilder validation)
+        {
+            if (execute == null)
+                throw new ArgumentNullException("execute");
+            _validationsBuilder = validation;
+            _execute = () =>
+            {
+                runBeforeExecute?.Invoke();
+                execute();
+            };
+            _canExecute = () =>
+            {
+                return canExecute(validation);
+            };
         }
 
         #endregion // Constructors

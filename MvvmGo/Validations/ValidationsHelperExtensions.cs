@@ -2,6 +2,7 @@
 using MvvmGo.Models;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MvvmGo.Validations
 {
@@ -19,26 +20,44 @@ namespace MvvmGo.Validations
             return builder;
         }
 
-        public static ValidationsBuilder AddProperties(this ValidationsBuilder builder, params string[] propertyNames)
+        public static PropertyValidationsBuilder AddProperties(this ValidationsBuilder builder, params string[] propertyNames)
         {
-            builder.Properties.AddRange(propertyNames);
-            return builder;
+            List<PropertyValidation> result = new List<PropertyValidation>();
+            foreach (var item in propertyNames)
+            {
+                var property = builder.Properties.FirstOrDefault(x => x.Name== item);
+                if (property == null)
+                {
+                    property = new PropertyValidation() { Name = item };
+                    builder.Properties.Add(property);
+                    result.Add(property);
+                }
+            }
+
+            return new PropertyValidationsBuilder() { ValidationsBuilder = builder, PropertyValidation = result };
         }
 
-        public static ValidationsBuilder AddValidations(this ValidationsBuilder builder, params ValidationAttribute[] validationAttributes)
+        public static ValidationsBuilder AddValidations(this PropertyValidationsBuilder  propertyBuilder, params ValidationAttribute[] validationAttributes)
         {
-            builder.Validations.AddRange(validationAttributes);
-            return builder;
+            foreach (var item in validationAttributes)
+            {
+                foreach (var property in propertyBuilder.PropertyValidation)
+                {
+                    property.Validations.Add(item);
+                }
+            }
+           
+            return propertyBuilder.ValidationsBuilder;
         }
 
-        public static ValidationsBuilder ClearValidationAndProperties(this ValidationsBuilder builder)
-        {
-            builder.Validations.Clear();
-            builder.Properties.Clear();
-            return builder;
-        }
+        //public static ValidationsBuilder ClearValidationAndProperties(this ValidationsBuilder builder)
+        //{
+        //    //builder.Validations.Clear();
+        //    builder.Properties.Clear();
+        //    return builder;
+        //}
 
-        public static ValidationsBuilder Build(this ValidationsBuilder builder, bool clearValidationsAndProperties = false)
+        public static ValidationsBuilder Build(this ValidationsBuilder builder)//, bool clearValidationsAndProperties = false
         {
             foreach (var viewmodel in builder.ViewModels)
             {
@@ -46,42 +65,39 @@ namespace MvvmGo.Validations
                 {
                     foreach (var property in builder.Properties)
                     {
-                        AddPropertyValidation(viewmodel, modelType, property, builder.Validations.ToArray());
+                        AddPropertyValidation(viewmodel, modelType, property, builder);
                     }
                 }
             }
-            if (clearValidationsAndProperties)
-                return builder.ClearValidationAndProperties();
+            //if (clearValidationsAndProperties)
+            //    return builder.ClearValidationAndProperties();
             return builder;
         }
 
-        public static Dictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>> PropertyValidations = new Dictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>>();
-        internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, Type modelType, string propertyName, params ValidationAttribute[] validationAttributes)
+        public static Dictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, ValidationsBuilder>>> PropertyValidations = new Dictionary<IValidationPropertyChanged, Dictionary<Type, Dictionary<string, ValidationsBuilder>>>();
+        internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, Type modelType, PropertyValidation property, ValidationsBuilder validationsBuilder)
         {
             if (PropertyValidations.ContainsKey(viewModel))
             {
-                if (PropertyValidations.TryGetValue(viewModel, out Dictionary<Type, Dictionary<string, List<ValidationAttribute>>> dictionary))
+                if (PropertyValidations.TryGetValue(viewModel, out Dictionary<Type, Dictionary<string,ValidationsBuilder>> dictionary))
                 {
                     if (dictionary.ContainsKey(modelType))
                     {
-                        if (!dictionary[modelType].ContainsKey(propertyName))
-                            dictionary[modelType][propertyName] = new List<ValidationAttribute>(validationAttributes);
-                        else
-                            dictionary[modelType][propertyName].AddRange(validationAttributes);
+                        dictionary[modelType][property.Name] = validationsBuilder;
                     }
                     else
                     {
-                        dictionary[modelType] = new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } };
+                        dictionary[modelType] = new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } };
                     }
                 }
                 else
                 {
-                    PropertyValidations.Add(viewModel, new Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>() { { modelType, new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } } } });
+                    PropertyValidations.Add(viewModel, new Dictionary<Type, Dictionary<string, ValidationsBuilder>>() { { modelType, new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } } } });
                 }
             }
             else
             {
-                PropertyValidations.Add(viewModel, new Dictionary<Type, Dictionary<string, List<ValidationAttribute>>>() { { modelType, new Dictionary<string, List<ValidationAttribute>>() { { propertyName, new List<ValidationAttribute>(validationAttributes) } } } });
+                PropertyValidations.Add(viewModel, new Dictionary<Type, Dictionary<string, ValidationsBuilder>>() { { modelType, new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } } } });
             }
         }
     }
