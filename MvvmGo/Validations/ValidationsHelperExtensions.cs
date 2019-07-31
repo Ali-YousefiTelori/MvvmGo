@@ -16,12 +16,20 @@ namespace MvvmGo.Validations
 
         public static ValidationsBuilder AddTypes(this ValidationsBuilder builder, params Type[] modelTypes)
         {
-            builder.ModelTypes.AddRange(modelTypes);
+            foreach (var item in modelTypes)
+            {
+                if (!builder.ModelTypes.Contains(item))
+                    builder.ModelTypes.AddRange(modelTypes);
+            }
             return builder;
         }
-        public static ValidationsBuilder AddInstance<T>(this ValidationsBuilder builder, params T[] instances)
+        public static ValidationsBuilder AddInstances<T>(this ValidationsBuilder builder, params T[] instances)
         {
-            builder.ModelInstances.AddRange(instances.Cast<object>());
+            foreach (var item in instances)
+            {
+                if (!builder.ModelInstances.Contains(item))
+                    builder.ModelInstances.Add(item);
+            }
             return builder;
         }
         public static PropertyValidationsBuilder AddProperties(this ValidationsBuilder builder, params string[] propertyNames)
@@ -69,14 +77,14 @@ namespace MvvmGo.Validations
                 {
                     foreach (var property in builder.Properties)
                     {
-                        AddPropertyValidation(viewmodel, modelType, property, builder);
+                        AddPropertyValidation(viewmodel, builder);
                     }
                 }
                 foreach (var modelInstance in builder.ModelInstances)
                 {
                     foreach (var property in builder.Properties)
                     {
-                        AddPropertyValidation(viewmodel, modelInstance, property, builder);
+                        AddPropertyValidation(viewmodel, builder);
                     }
                 }
             }
@@ -85,30 +93,17 @@ namespace MvvmGo.Validations
             return builder;
         }
 
-        public static Dictionary<IValidationPropertyChanged, Dictionary<object, Dictionary<string, ValidationsBuilder>>> PropertyValidations = new Dictionary<IValidationPropertyChanged, Dictionary<object, Dictionary<string, ValidationsBuilder>>>();
-        internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, object model, PropertyValidation property, ValidationsBuilder validationsBuilder)
+        public static Dictionary<IValidationPropertyChanged, List<ValidationsBuilder>> PropertyValidations = new Dictionary<IValidationPropertyChanged, List<ValidationsBuilder>>();
+        internal static void AddPropertyValidation(IValidationPropertyChanged viewModel, ValidationsBuilder validationsBuilder)
         {
-            if (PropertyValidations.ContainsKey(viewModel))
+            if (PropertyValidations.TryGetValue(viewModel, out List<ValidationsBuilder> items))
             {
-                if (PropertyValidations.TryGetValue(viewModel, out Dictionary<object, Dictionary<string, ValidationsBuilder>> dictionary))
-                {
-                    if (dictionary.ContainsKey(model))
-                    {
-                        dictionary[model][property.Name] = validationsBuilder;
-                    }
-                    else
-                    {
-                        dictionary[model] = new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } };
-                    }
-                }
-                else
-                {
-                    PropertyValidations.Add(viewModel, new Dictionary<object, Dictionary<string, ValidationsBuilder>>() { { model, new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } } } });
-                }
+                items.Add(validationsBuilder);
             }
             else
             {
-                PropertyValidations.Add(viewModel, new Dictionary<object, Dictionary<string, ValidationsBuilder>>() { { model, new Dictionary<string, ValidationsBuilder>() { { property.Name, validationsBuilder } } } });
+                items = new List<ValidationsBuilder>() { validationsBuilder };
+                PropertyValidations.Add(viewModel, items);
             }
         }
     }

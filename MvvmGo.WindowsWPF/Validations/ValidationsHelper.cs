@@ -199,17 +199,17 @@ namespace MvvmGo.Validations
 
                 if (property != null)
                 {
-                    if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && (ValidationsHelperExtensions.PropertyValidations[propertyChanged].TryGetValue(objectInstance, out Dictionary<string,ValidationsBuilder> properties) || ValidationsHelperExtensions.PropertyValidations[propertyChanged].TryGetValue(typeOfData, out properties))
-                    && ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData].ContainsKey(bindingPropertyName))
+                    if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && ValidationsHelperExtensions.PropertyValidations[propertyChanged].Any(x => x.ModelInstances.Contains(objectInstance) || x.ModelTypes.Contains(typeOfData)))
                     {
+                        var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged].Where(x => x.ModelInstances.Contains(objectInstance) || x.ModelTypes.Contains(typeOfData));
                         //var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData];
                         foreach (var propertyValidation in properties)
                         {
-                            if (propertyValidation.Value.Properties.Count > 0)
+                            if (propertyValidation.Properties.Count > 0)
                             {
                                 bool myHasError = false;
 
-                                foreach (var validateProp in propertyValidation.Value.Properties)
+                                foreach (var validateProp in propertyValidation.Properties)
                                 {
                                     var myFullNameOfProperty = typeOfData.FullName + "." + validateProp.Name;
                                     if (propertyChanged.MessagesByProperty.ContainsKey(myFullNameOfProperty))
@@ -253,7 +253,7 @@ namespace MvvmGo.Validations
                                         }
                                     }
                                 }
-                                propertyValidation.Value.HasError = myHasError;
+                                propertyValidation.HasError = myHasError;
                                 if (myHasError)
                                     hasError = true;
                             }
