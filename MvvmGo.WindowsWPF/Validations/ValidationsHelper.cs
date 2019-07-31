@@ -199,10 +199,10 @@ namespace MvvmGo.Validations
 
                 if (property != null)
                 {
-                    if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && ValidationsHelperExtensions.PropertyValidations[propertyChanged].ContainsKey(typeOfData)
+                    if (ValidationsHelperExtensions.PropertyValidations.ContainsKey(propertyChanged) && (ValidationsHelperExtensions.PropertyValidations[propertyChanged].TryGetValue(objectInstance, out Dictionary<string,ValidationsBuilder> properties) || ValidationsHelperExtensions.PropertyValidations[propertyChanged].TryGetValue(typeOfData, out properties))
                     && ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData].ContainsKey(bindingPropertyName))
                     {
-                        var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData];
+                        //var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData];
                         foreach (var propertyValidation in properties)
                         {
                             if (propertyValidation.Value.Properties.Count > 0)

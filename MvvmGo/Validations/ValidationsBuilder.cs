@@ -33,6 +33,7 @@ namespace MvvmGo.Validations
         }
         public List<IValidationPropertyChanged> ViewModels { get; set; } = new List<IValidationPropertyChanged>();
         public List<Type> ModelTypes { get; set; } = new List<Type>();
+        public List<object> ModelInstances { get; set; } = new List<object>();
         public List<PropertyValidation> Properties { get; set; } = new List<PropertyValidation>();
     }
 
