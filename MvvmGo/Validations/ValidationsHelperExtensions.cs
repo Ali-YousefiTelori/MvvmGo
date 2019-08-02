@@ -27,6 +27,8 @@ namespace MvvmGo.Validations
         {
             foreach (var item in instances)
             {
+                if (item == null)
+                    throw new Exception("Your Instance is null, you cannot add validation for a null instance");
                 if (!builder.ModelInstances.Contains(item))
                     builder.ModelInstances.Add(item);
             }
@@ -73,21 +75,23 @@ namespace MvvmGo.Validations
         {
             foreach (var viewmodel in builder.ViewModels)
             {
-                foreach (var modelType in builder.ModelTypes)
-                {
-                    foreach (var property in builder.Properties)
-                    {
-                        AddPropertyValidation(viewmodel, builder);
-                    }
-                }
-                foreach (var modelInstance in builder.ModelInstances)
-                {
-                    foreach (var property in builder.Properties)
-                    {
-                        AddPropertyValidation(viewmodel, builder);
-                    }
-                }
+                AddPropertyValidation(viewmodel, builder);
+                //foreach (var modelType in builder.ModelTypes)
+                //{
+                //    foreach (var property in builder.Properties)
+                //    {
+
+                //    }
+                //}
+                //foreach (var modelInstance in builder.ModelInstances)
+                //{
+                //    foreach (var property in builder.Properties)
+                //    {
+                //        AddPropertyValidation(viewmodel, builder);
+                //    }
+                //}
             }
+
             //if (clearValidationsAndProperties)
             //    return builder.ClearValidationAndProperties();
             return builder;

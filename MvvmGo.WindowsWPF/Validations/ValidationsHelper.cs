@@ -55,6 +55,11 @@ namespace MvvmGo.Validations
 
     public class ValidationsHelper
     {
+        static ValidationsHelper()
+        {
+
+        }
+
         public static readonly DependencyProperty PropertyProperty = DependencyProperty.RegisterAttached(
             "Property",
             typeof(string),
@@ -351,7 +356,10 @@ namespace MvvmGo.Validations
                 {
                     if (context != null)
                     {
-                        context = context.GetType().GetProperty(path).GetValue(context, null);
+                        var property = context.GetType().GetProperty(path);
+                        if (property == null)
+                            throw new Exception($"{path} does not exist on {context.GetType().FullName}");
+                        context = property.GetValue(context, null);
                     }
                 }
                 i++;
