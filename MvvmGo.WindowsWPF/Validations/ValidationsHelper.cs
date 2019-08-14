@@ -333,7 +333,13 @@ namespace MvvmGo.Validations
                 };
             }
             else
+            {
                 descriptor.AddValueChanged(d, action);
+                ValidationsBuilder.Changed += () =>
+                {
+                    action(d, null);
+                };
+            }
             //if (d is FrameworkElement el)
             //    el.Unloaded += (sender, args) =>
             //    {

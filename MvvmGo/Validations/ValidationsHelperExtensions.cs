@@ -44,8 +44,8 @@ namespace MvvmGo.Validations
                 {
                     property = new PropertyValidation() { Name = item };
                     builder.Properties.Add(property);
-                    result.Add(property);
                 }
+                result.Add(property);
             }
 
             return new PropertyValidationsBuilder() { ValidationsBuilder = builder, PropertyValidation = result };
@@ -64,12 +64,15 @@ namespace MvvmGo.Validations
             return propertyBuilder.ValidationsBuilder;
         }
 
-        //public static ValidationsBuilder ClearValidationAndProperties(this ValidationsBuilder builder)
-        //{
-        //    //builder.Validations.Clear();
-        //    builder.Properties.Clear();
-        //    return builder;
-        //}
+        public static ValidationsBuilder ClearValidations(this ValidationsBuilder builder)
+        {
+            foreach (var item in builder.Properties)
+            {
+                item.Validations.Clear();
+            }
+
+            return builder;
+        }
 
         public static ValidationsBuilder Build(this ValidationsBuilder builder)//, bool clearValidationsAndProperties = false
         {
