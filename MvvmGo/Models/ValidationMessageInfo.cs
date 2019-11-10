@@ -15,6 +15,7 @@ namespace MvvmGo.Models
 
     public class ValidationMessageInfo
     {
+        public object Instance { get; set; }
         public string PropertyName { get; set; }
         public ValidationMessageType Type { get; set; }
         public string Title { get; set; }
