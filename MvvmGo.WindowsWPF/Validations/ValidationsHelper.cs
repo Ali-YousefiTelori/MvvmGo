@@ -18,7 +18,9 @@ using System.Xaml;
 
 namespace MvvmGo.Validations
 {
-
+    public class IsValidationBuilderEventArgs : EventArgs
+    {
+    }
 
     //public class ErrorMessage : MarkupExtension
     //{
@@ -210,6 +212,8 @@ namespace MvvmGo.Validations
                         //var properties = ValidationsHelperExtensions.PropertyValidations[propertyChanged][typeOfData];
                         foreach (var propertyValidation in properties)
                         {
+                            if (!propertyValidation.RealTimeCheck && !(e is IsValidationBuilderEventArgs))
+                                continue;
                             propertyValidation.HasError = false;
                             foreach (var instance in propertyValidation.ModelInstances)
                             {
@@ -355,9 +359,9 @@ namespace MvvmGo.Validations
             else
             {
                 descriptor.AddValueChanged(d, action);
-                ValidationsBuilder.Changed += () =>
+                ValidationsBuilder.Changed += (validationsBuilder) =>
                 {
-                    action(d, null);
+                    action(d, new IsValidationBuilderEventArgs());
                 };
             }
             //if (d is FrameworkElement el)

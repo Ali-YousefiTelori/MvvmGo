@@ -13,7 +13,7 @@ namespace MvvmGo.Validations
 
     public class ValidationsBuilder
     {
-        public static Action Changed { get; set; }
+        public static Action<ValidationsBuilder> Changed { get; set; }
 
         bool _HasError;
         public bool HasError
@@ -37,10 +37,10 @@ namespace MvvmGo.Validations
         public List<Type> ModelTypes { get; set; } = new List<Type>();
         public List<object> ModelInstances { get; set; } = new List<object>();
         public List<PropertyValidation> Properties { get; set; } = new List<PropertyValidation>();
-
+        public bool RealTimeCheck { get; set; } = true;
         public void Validate()
         {
-            Changed?.Invoke();
+            Changed?.Invoke(this);
         }
     }
 
