@@ -34,14 +34,56 @@ namespace MvvmGo.Validations
             }
         }
         public List<IValidationPropertyChanged> ViewModels { get; set; } = new List<IValidationPropertyChanged>();
-        public List<Type> ModelTypes { get; set; } = new List<Type>();
-        public List<object> ModelInstances { get; set; } = new List<object>();
-        public List<PropertyValidation> Properties { get; set; } = new List<PropertyValidation>();
+        public Dictionary<Type, List<PropertyValidation>> ModelTypes { get; set; } = new Dictionary<Type, List<PropertyValidation>>();
+        public Dictionary<object, List<PropertyValidation>> ModelInstances { get; set; } = new Dictionary<object, List<PropertyValidation>>();
         public bool RealTimeCheck { get; set; } = true;
         public void Validate()
         {
             Changed?.Invoke(this);
         }
+    }
+    public class PropertyValidationsGenerator
+    {
+        public ValidationsGenerator ValidationsBuilder { get; set; }
+        public List<PropertyValidation> PropertyValidation { get; set; }
+    }
+
+    public class ValidationsGenerator
+    {
+        public List<IValidationPropertyChanged> ViewModels { get; set; } = new List<IValidationPropertyChanged>();
+        public Dictionary<Type, List<PropertyValidation>> ModelTypes { get; set; } = new Dictionary<Type, List<PropertyValidation>>();
+        public Dictionary<object, List<PropertyValidation>> ModelInstances { get; set; } = new Dictionary<object, List<PropertyValidation>>();
+        public bool RealTimeCheck { get; set; } = true;
+
+        //public static implicit operator ValidationsBuilder(ValidationsGenerator validationsGenerator)
+        //{
+        //    return new ValidationsBuilder()
+        //    {
+        //        ViewModels = validationsGenerator.ViewModels,
+        //        ModelInstances = validationsGenerator.ModelInstances,
+        //        ModelTypes = validationsGenerator.ModelTypes,
+        //        RealTimeCheck = validationsGenerator.RealTimeCheck
+        //    };
+        //}
+
+        //public static implicit operator ValidationsGenerator(ValidationsBuilder validationsBuilder)
+        //{
+        //    var result = new ValidationsBuilder();
+        //    foreach (var item in validationsBuilder.ModelInstances)
+        //    {
+        //        result.ModelInstances.Add(item.Key, item.Value);
+        //    }
+        //    foreach (var item in validationsBuilder.ViewModels)
+        //    {
+        //        result.ViewModels.Add(item);
+        //    }
+        //    foreach (var item in validationsBuilder.ModelTypes)
+        //    {
+        //        result.ModelTypes.Add(item.Key, item.Value);
+        //    }
+        //    result.RealTimeCheck = validationsBuilder.RealTimeCheck;
+        //    return result;
+        //}
     }
 
     public class PropertyValidation

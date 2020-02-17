@@ -8,50 +8,68 @@ namespace MvvmGo.Validations
 {
     public static class ValidationsHelperExtensions
     {
-        public static ValidationsBuilder AddViewModels(this ValidationsBuilder builder, params IValidationPropertyChanged[] viewModels)
+        public static ValidationsGenerator AddViewModels(this ValidationsGenerator builder, params IValidationPropertyChanged[] viewModels)
         {
             builder.ViewModels.AddRange(viewModels);
             return builder;
         }
 
-        public static ValidationsBuilder AddTypes(this ValidationsBuilder builder, params Type[] modelTypes)
+        public static ValidationsGenerator AddTypes(this ValidationsGenerator builder, params Type[] modelTypes)
         {
             foreach (var item in modelTypes)
             {
-                if (!builder.ModelTypes.Contains(item))
-                    builder.ModelTypes.AddRange(modelTypes);
+                if (!builder.ModelTypes.TryGetValue(item, out List<PropertyValidation> validations))
+                    builder.ModelTypes.Add(item, new List<PropertyValidation>());
             }
             return builder;
         }
-        public static ValidationsBuilder AddInstances<T>(this ValidationsBuilder builder, params T[] instances)
+        public static ValidationsGenerator AddInstances<T>(this ValidationsGenerator builder, params T[] instances)
         {
             foreach (var item in instances)
             {
                 if (item == null)
                     throw new Exception("Your Instance is null, you cannot add validation for a null instance");
-                if (!builder.ModelInstances.Contains(item))
-                    builder.ModelInstances.Add(item);
+                if (!builder.ModelInstances.TryGetValue(item, out List<PropertyValidation> validations))
+                    builder.ModelInstances.Add(item, new List<PropertyValidation>());
             }
             return builder;
         }
-        public static PropertyValidationsBuilder AddProperties(this ValidationsBuilder builder, params string[] propertyNames)
+
+        public static PropertyValidationsGenerator AddProperties(this ValidationsGenerator builder, params string[] propertyNames)
         {
             List<PropertyValidation> result = new List<PropertyValidation>();
-            foreach (var item in propertyNames)
+            foreach (var instance in builder.ModelInstances)
             {
-                var property = builder.Properties.FirstOrDefault(x => x.Name == item);
-                if (property == null)
+                foreach (var item in propertyNames)
                 {
-                    property = new PropertyValidation() { Name = item };
-                    builder.Properties.Add(property);
+                    var property = instance.Value.FirstOrDefault(x => x.Name == item);
+                    if (property == null)
+                    {
+                        property = new PropertyValidation() { Name = item };
+                        instance.Value.Add(property);
+                    }
+                    result.Add(property);
                 }
-                result.Add(property);
             }
 
-            return new PropertyValidationsBuilder() { ValidationsBuilder = builder, PropertyValidation = result };
+            foreach (var type in builder.ModelTypes)
+            {
+                foreach (var item in propertyNames)
+                {
+                    var property = type.Value.FirstOrDefault(x => x.Name == item);
+                    if (property == null)
+                    {
+                        property = new PropertyValidation() { Name = item };
+                        type.Value.Add(property);
+                    }
+                    result.Add(property);
+                }
+            }
+
+            return new PropertyValidationsGenerator() { ValidationsBuilder = builder, PropertyValidation = result };
         }
 
-        public static ValidationsBuilder AddValidations(this PropertyValidationsBuilder propertyBuilder, params ValidationAttribute[] validationAttributes)
+        public static ValidationsGenerator AddValidations(this PropertyValidationsGenerator propertyBuilder, params ValidationAttribute[] validationAttributes)
         {
             foreach (var item in validationAttributes)
             {
@@ -66,38 +84,43 @@ namespace MvvmGo.Validations
 
         public static ValidationsBuilder ClearValidations(this ValidationsBuilder builder)
         {
-            foreach (var item in builder.Properties)
+            foreach (var item in builder.ModelInstances)
             {
-                item.Validations.Clear();
+                item.Value.Clear();
             }
-
+            foreach (var item in builder.ModelTypes)
+            {
+                item.Value.Clear();
+            }
             return builder;
         }
 
-        public static ValidationsBuilder Build(this ValidationsBuilder builder)//, bool clearValidationsAndProperties = false
+        public static ValidationsGenerator Build(this ValidationsGenerator generator, ValidationsBuilder builder)//, bool clearValidationsAndProperties = false
         {
-            foreach (var viewmodel in builder.ViewModels)
+            foreach (var item in generator.ModelInstances)
+            {
+                if (!builder.ModelInstances.ContainsKey(item.Key))
+                    builder.ModelInstances.Add(item.Key, item.Value);
+            }
+            foreach (var item in generator.ViewModels)
+            {
+                if (!builder.ViewModels.Contains(item))
+                    builder.ViewModels.Add(item);
+            }
+            foreach (var item in generator.ModelTypes)
+            {
+                if (!builder.ModelTypes.ContainsKey(item.Key))
+                    builder.ModelTypes.Add(item.Key, item.Value);
+            }
+            builder.RealTimeCheck = generator.RealTimeCheck;
+            foreach (var viewmodel in generator.ViewModels)
             {
                 AddPropertyValidation(viewmodel, builder);
-                //foreach (var modelType in builder.ModelTypes)
-                //{
-                //    foreach (var property in builder.Properties)
-                //    {
-
-                //    }
-                //}
-                //foreach (var modelInstance in builder.ModelInstances)
-                //{
-                //    foreach (var property in builder.Properties)
-                //    {
-                //        AddPropertyValidation(viewmodel, builder);
-                //    }
-                //}
             }
 
-            //if (clearValidationsAndProperties)
-            //    return builder.ClearValidationAndProperties();
-            return builder;
+            generator.ModelInstances.Clear();
+            generator.ModelTypes.Clear();
+            return generator;
         }
 
         public static Dictionary<IValidationPropertyChanged, List<ValidationsBuilder>> PropertyValidations = new Dictionary<IValidationPropertyChanged, List<ValidationsBuilder>>();
