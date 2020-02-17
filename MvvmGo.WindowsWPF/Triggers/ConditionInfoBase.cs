@@ -31,7 +31,7 @@ namespace MvvmGo.Triggers
             object targetValue = property.GetValue(target, null);
             object sourceValue = Value;
 
-            if (targetValue != null && targetValue.GetType() == sourceValue.GetType())
+            if (targetValue != null && sourceValue != null && targetValue.GetType() == sourceValue.GetType())
             {
                 bool result = targetValue.Equals(sourceValue);
                 if (IsInvert)
@@ -40,7 +40,7 @@ namespace MvvmGo.Triggers
             }
             else if (targetValue == sourceValue)
             {
-                bool result = targetValue.Equals(sourceValue);
+                bool result = targetValue == null ||  targetValue.Equals(sourceValue);
                 if (IsInvert)
                     return !result;
                 return result;

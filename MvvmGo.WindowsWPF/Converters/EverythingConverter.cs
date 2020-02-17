@@ -10,6 +10,7 @@ namespace MvvmGo.Converters
     {
         public object ConditionValue { get; set; }
         public object ResultValue { get; set; }
+        public bool IsInverseCondition { get; set; }
     }
 
     public class EverythingConverterList : List<EverythingConverterValue>
@@ -39,14 +40,14 @@ namespace MvvmGo.Converters
                 }
             }
             if (FromMarkupValue != null)
-                return Conditions.Where(x => x.ConditionValue.Equals(FromMarkupValue)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
+                return Conditions.Where(x => x.IsInverseCondition ? !x.ConditionValue.Equals(FromMarkupValue) : x.ConditionValue.Equals(FromMarkupValue)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
             else
-                return Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
+                return Conditions.Where(x => x.IsInverseCondition ? !x.ConditionValue.Equals(value) : x.ConditionValue.Equals(value)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
         }
         public object ConvertBack(object value, Type targetType,
             object parameter, CultureInfo culture)
         {
-            object find = Conditions.Where(x => x.ConditionValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault() ?? Conditions.Where(x => x.ResultValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault();
+            object find = Conditions.Where(x => x.IsInverseCondition ? !x.ConditionValue.Equals(value) : x.ConditionValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault() ?? Conditions.Where(x => x.IsInverseCondition ? !x.ResultValue.Equals(value) : x.ResultValue.Equals(value)).Select(x => x.ConditionValue).FirstOrDefault();
             return find ?? NullBackValue;
         }
     }
