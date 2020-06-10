@@ -217,7 +217,7 @@ namespace MvvmGo.Validations
                             propertyValidation.HasError = false;
                             foreach (var instance in propertyValidation.ModelInstances)
                             {
-                                CheckInstance(instance);
+                                CheckInstance(instance.Key);
                             }
                             CheckInstance(objectInstance);
                             void CheckInstance(object instance)
@@ -225,7 +225,8 @@ namespace MvvmGo.Validations
                                 if (propertyValidation.ModelInstances.Values.Count > 0)
                                 {
                                     bool myHasError = false;
-
+                                    if (propertyValidation.LockHasError && propertyValidation.LockHasErrorWasTrue)
+                                        myHasError = true;
                                     foreach (var validateProp in propertyValidation.ModelInstances.Where(x => x.Key == instance).SelectMany(x => x.Value))
                                     {
                                         var myFullNameOfProperty = typeOfData.FullName + "." + validateProp.Name;
@@ -279,11 +280,13 @@ namespace MvvmGo.Validations
                                     }
                                     propertyValidation.HasError = propertyValidation.HasError || myHasError;
                                     if (myHasError)
+                                    {
                                         hasError = true;
+                                        propertyValidation.LockHasErrorWasTrue = true;
+                                    }
                                 }
                             }
                         }
-
                     }
                     else
                     {
@@ -327,6 +330,7 @@ namespace MvvmGo.Validations
                 {
                     propertyChanged.AllMessages.Remove(propertyChanged.AllMessages.FirstOrDefault(x => x.PropertyName == bindingPropertyName));
                 }
+
                 if (propertyChanged.MessagesByProperty.ContainsKey(fullNameOfProperty))
                 {
                     var myErrors = propertyChanged.MessagesByProperty[fullNameOfProperty];

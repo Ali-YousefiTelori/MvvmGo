@@ -37,9 +37,19 @@ namespace MvvmGo.Validations
         public Dictionary<Type, List<PropertyValidation>> ModelTypes { get; set; } = new Dictionary<Type, List<PropertyValidation>>();
         public Dictionary<object, List<PropertyValidation>> ModelInstances { get; set; } = new Dictionary<object, List<PropertyValidation>>();
         public bool RealTimeCheck { get; set; } = true;
+        
+        public bool LockHasError { get; set; }
+        public bool LockHasErrorWasTrue { get; set; }
         public void Validate()
         {
-            Changed?.Invoke(this);
+            for (int i = 0; i < 2; i++)
+            {
+                _HasError = false;
+                LockHasErrorWasTrue = false;
+                LockHasError = true;
+                Changed?.Invoke(this);
+                LockHasError = false;
+            }
         }
     }
     public class PropertyValidationsGenerator
