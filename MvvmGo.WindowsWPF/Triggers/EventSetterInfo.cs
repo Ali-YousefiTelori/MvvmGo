@@ -1,10 +1,6 @@
 ﻿using MvvmGo.Commands;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Input;
 
 namespace MvvmGo.Triggers
 {
