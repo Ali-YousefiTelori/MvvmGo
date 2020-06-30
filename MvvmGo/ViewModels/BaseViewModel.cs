@@ -4,11 +4,59 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Input;
 
 namespace MvvmGo.ViewModels
 {
     public class BaseViewModel : PropertyChangedViewModel, IValidationPropertyChanged
     {
+#if (!NET35 && !NET40)
+        public bool IsChangeBusyWhenCommandExecute { get; set; }
+        List<BaseCommand> Commands { get; set; } = new List<BaseCommand>();
+        public void InitializeCommands()
+        {
+#if (NETSTANDARD1_6)
+            throw new NotSupportedException();
+#else
+            foreach (var property in this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).Where(x => x.PropertyType.BaseType == typeof(BaseCommand)))
+            {
+                var command = (BaseCommand)property.GetValue(this);
+                if (command != null)
+                {
+                    command.IsChangeBusyWhenCommandExecute = IsChangeBusyWhenCommandExecute;
+                    command.BaseViewModel = this;
+                    Commands.Add(command);
+                }
+            }
+#endif
+        }
+#endif
+        public void ValidateAllCommands()
+        {
+#if (!NET35 && !NET40)
+            if (RunOnUIAction != null)
+            {
+                RunOnUIAction.Invoke(() =>
+                {
+                    foreach (var item in Commands)
+                    {
+                        item.BaseValidateCanExecute(null);
+                    }
+                });
+            }
+            else
+            {
+                foreach (var item in Commands)
+                {
+                    item.BaseValidateCanExecute(null);
+                }
+            }
+            
+#else
+            throw new NotSupportedException();
+#endif
+        }
+
         public static void Initialize()
         {
             IsDesignTime = false;
@@ -39,6 +87,12 @@ namespace MvvmGo.ViewModels
                 _IsBusy = value;
                 OnPropertyChanged(nameof(IsBusy));
                 IsBusyChangedAction?.Invoke(_IsBusy, BusyContent);
+#if (!NET35 && !NET40)
+                if (Commands.Count > 0)
+                {
+                    ValidateAllCommands();
+                }
+#endif
             }
         }
 
