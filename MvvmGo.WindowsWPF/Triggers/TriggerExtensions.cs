@@ -93,7 +93,12 @@ namespace MvvmGo.Triggers
                             {
                                 foreach (var setter in eventTriggerInfo.Setters)
                                 {
-                                    setter.SetValue(element);
+                                    if (setter is CommandSetterInfo commandSetter)
+                                    {
+                                        commandSetter.Fire(d, de);
+                                    }
+                                    else
+                                        setter.SetValue(element);
                                 }
                             }
                         })

@@ -42,7 +42,7 @@ namespace MvvmGo.Converters
             if (FromMarkupValue != null)
                 return Conditions.Where(x => x.IsInverseCondition ? !x.ConditionValue.Equals(FromMarkupValue) : x.ConditionValue.Equals(FromMarkupValue)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
             else
-                return Conditions.Where(x => x.IsInverseCondition ? !x.ConditionValue.Equals(value) : x.ConditionValue.Equals(value)).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
+                return Conditions.Where(x => x.IsInverseCondition ? (x.ConditionValue != value || !x.ConditionValue.Equals(value)) : (x.ConditionValue == value || (x.ConditionValue != null && x.ConditionValue.Equals(value)))).Select(x => x.ResultValue).FirstOrDefault() ?? NullResultValue;
         }
         public object ConvertBack(object value, Type targetType,
             object parameter, CultureInfo culture)

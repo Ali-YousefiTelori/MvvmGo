@@ -9,6 +9,53 @@ namespace MvvmGo.ViewModels
 {
     public class BaseViewModel : PropertyChangedViewModel, IValidationPropertyChanged
     {
+#if (!NET35 && !NET40)
+        public virtual bool IsChangeBusyWhenCommandExecute { get; set; }
+        List<BaseCommand> Commands { get; set; } = new List<BaseCommand>();
+        public void InitializeCommands()
+        {
+#if (NETSTANDARD1_6)
+            throw new NotSupportedException();
+#else
+            foreach (var property in this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance).Where(x => x.PropertyType.BaseType == typeof(BaseCommand)))
+            {
+                var command = (BaseCommand)property.GetValue(this);
+                if (command != null)
+                {
+                    command.IsChangeBusyWhenCommandExecute = IsChangeBusyWhenCommandExecute;
+                    command.BaseViewModel = this;
+                    Commands.Add(command);
+                }
+            }
+#endif
+        }
+#endif
+        public void ValidateAllCommands()
+        {
+#if (!NET35 && !NET40)
+            if (RunOnUIAction != null)
+            {
+                RunOnUIAction.Invoke(() =>
+                {
+                    foreach (var item in Commands)
+                    {
+                        item.BaseValidateCanExecute(null);
+                    }
+                });
+            }
+            else
+            {
+                foreach (var item in Commands)
+                {
+                    item.BaseValidateCanExecute(null);
+                }
+            }
+            
+#else
+            throw new NotSupportedException();
+#endif
+        }
+
         public static void Initialize()
         {
             IsDesignTime = false;
@@ -16,12 +63,12 @@ namespace MvvmGo.ViewModels
 
         public static bool IsDesignTime { get; set; } = true;
         public static Action<Action> RunOnUIAction { get; set; }
-        public Action<string> PropertyChangedAction { get; set; }
+        public virtual Action<string> PropertyChangedAction { get; set; }
         /// <summary>
         /// when busy changed
         /// </summary>
-        public Action<bool, string> IsBusyChangedAction { get; set; }
-        public Action<string> BusyContentChangedAction { get; set; }
+        public virtual Action<bool, string> IsBusyChangedAction { get; set; }
+        public virtual Action<string> BusyContentChangedAction { get; set; }
 
         private bool _IsBusy;
         private string _BusyContent;
@@ -39,10 +86,15 @@ namespace MvvmGo.ViewModels
                 _IsBusy = value;
                 OnPropertyChanged(nameof(IsBusy));
                 IsBusyChangedAction?.Invoke(_IsBusy, BusyContent);
+#if (!NET35 && !NET40)
+                if (Commands.Count > 0)
+                {
+                    ValidateAllCommands();
+                }
+#endif
             }
         }
-
-        public string BusyContent
+        public virtual string BusyContent
         {
             get
             {
@@ -56,11 +108,11 @@ namespace MvvmGo.ViewModels
             }
         }
 #if (!NET35)
-        public ObservableCollection<ValidationMessageInfo> AllMessages { get; set; } = new ObservableCollection<ValidationMessageInfo>();
+        public virtual ObservableCollection<ValidationMessageInfo> AllMessages { get; set; } = new ObservableCollection<ValidationMessageInfo>();
 #else
         public Collection<ValidationMessageInfo> AllMessages { get; set; } = new Collection<ValidationMessageInfo>();
 #endif
-        public bool HasError
+        public virtual bool HasError
         {
             get
             {
@@ -89,7 +141,7 @@ namespace MvvmGo.ViewModels
             return messageInfos.FirstOrDefault();
         }
 
-        public ValidationMessageInfo FirstMessage
+        public virtual ValidationMessageInfo FirstMessage
         {
             get
             {
@@ -98,10 +150,10 @@ namespace MvvmGo.ViewModels
         }
 
 #if (!NET35)
-        public System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo>();
+        public virtual System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new System.Collections.Concurrent.ConcurrentDictionary<string, ViewModelItemsInfo>();
 
 #else
-        public Dictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new Dictionary<string, ViewModelItemsInfo>();
+        public virtual Dictionary<string, ViewModelItemsInfo> MessagesByProperty { get; set; } = new Dictionary<string, ViewModelItemsInfo>();
 #endif
 
         public override void OnPropertyChanged(string name)
