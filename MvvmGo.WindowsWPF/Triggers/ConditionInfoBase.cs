@@ -56,11 +56,13 @@ namespace MvvmGo.Triggers
             {
                 try
                 {
-                    if (targetValue.GetType().IsEnum && !sourceValue.GetType().IsEnum)
-                        sourceValue = Enum.Parse(targetValue.GetType(), sourceValue.ToString());
-                    else
-                        sourceValue = Convert.ChangeType(sourceValue, targetValue.GetType());
-
+                    if (targetValue != null)
+                    {
+                        if (targetValue.GetType().IsEnum && !sourceValue.GetType().IsEnum)
+                            sourceValue = Enum.Parse(targetValue.GetType(), sourceValue.ToString());
+                        else
+                            sourceValue = Convert.ChangeType(sourceValue, targetValue.GetType());
+                    }
                 }
                 catch (Exception rx)
                 {

@@ -98,7 +98,7 @@ namespace MvvmGo.Triggers
                             }
                         })
                     });
-                    
+
                     dataConditionInfoes.AddRange(eventTriggerInfo.Conditions);
 
                     GenerateConditions(dataConditionInfoes, element, item);
@@ -278,7 +278,10 @@ namespace MvvmGo.Triggers
                 if (result.GetType().GetProperty(firstPath) != null)
                     return result;
                 if (result.GetType().GetProperty(property) != null)
-                    result = (INotifyPropertyChanged)result.GetType().GetProperty(property).GetValue(result, null);
+                {
+                    if (result.GetType().GetProperty(property).GetValue(result, null) is INotifyPropertyChanged notifyPropertyChanged)
+                        result = notifyPropertyChanged;
+                }
             }
             return null;
         }
