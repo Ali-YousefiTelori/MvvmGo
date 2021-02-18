@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
 
 namespace MvvmGo.Triggers
@@ -20,10 +21,18 @@ namespace MvvmGo.Triggers
             var source = binding.Source;
             if (source == null)
                 source = PropertyChanged;
-            else
-            {
 
+            if (source == null)
+            {
+                if (target is FrameworkElement element)
+                {
+                    if (element.DataContext != null)
+                    {
+                        source = FindSource(element.DataContext, binding.Path.Path);
+                    }
+                }
             }
+
             if (source == null || source == null)
                 return false;
             return ConditionBase(source, propertyName);

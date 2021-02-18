@@ -40,7 +40,7 @@ namespace MvvmGo.Triggers
             }
             else if (targetValue == sourceValue)
             {
-                bool result = targetValue == null ||  targetValue.Equals(sourceValue);
+                bool result = targetValue == null || targetValue.Equals(sourceValue);
                 if (IsInvert)
                     return !result;
                 return result;
@@ -77,5 +77,22 @@ namespace MvvmGo.Triggers
             }
         }
 
+        public object FindSource(object target, string path)
+        {
+            var split = path.Split('.');
+            for (int i = 0; i < split.Length - 1; i++)
+            {
+                var property = target.GetType().GetProperty(split[i], System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (property != null)
+                {
+                    target = property.GetValue(target);
+                    if (target == null)
+                        return null;
+                }
+                else
+                    return null;
+            }
+            return target;
+        }
     }
 }
