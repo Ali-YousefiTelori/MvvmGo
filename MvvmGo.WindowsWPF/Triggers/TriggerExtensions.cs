@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Windows.Input;
 
 namespace MvvmGo.Triggers
 {
@@ -330,7 +327,11 @@ namespace MvvmGo.Triggers
                 {
                     if (findTreeNotifyPropertyChanged.Properties.TryGetValue(item.Key, out List<TriggerItemData> list))
                     {
-                        list.AddRange(item.Value);
+                        foreach (var newItem in item.Value)
+                        {
+                            if (!list.Contains(newItem))
+                                list.Add(newItem);
+                        }
                     }
                     else
                     {
