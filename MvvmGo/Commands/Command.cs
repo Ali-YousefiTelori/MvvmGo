@@ -48,7 +48,11 @@ namespace MvvmGo.Commands
     public abstract class BaseCommand : ICommand
     {
         bool _IsBusy;
-        public bool IsBusy { get => _IsBusy; set => _IsBusy = value; }
+        public bool IsBusy
+        {
+            get => _IsBusy;
+            set => _IsBusy = value;
+        }
         public bool IsChangeBusyWhenCommandExecute { get; set; }
         public BaseViewModel BaseViewModel { get; set; }
 
